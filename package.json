@@ -1,0 +1,44 @@
+{
+  "name": "docflow",
+  "version": "1.0.0-rc.1",
+  "description": "A professional PDF editing workspace for the modern web",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently \"npx --prefix apps/renderer vite\" \"wait-on http://localhost:5173 && electron apps/desktop/main.cjs\"",
+    "build": "cd apps/renderer && pnpm build",
+    "typecheck": "cd apps/renderer && pnpm exec tsc --noEmit --skipLibCheck",
+    "lint": "cd apps/renderer && pnpm exec oxlint",
+    "test": "echo \"Error: no test specified\" && exit 0"
+  },
+  "keywords": ["pdf", "editor", "annotation", "document", "react", "typescript"],
+  "author": "Docflow Contributors",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-org/docflow"
+  },
+  "bugs": {
+    "url": "https://github.com/your-org/docflow/issues"
+  },
+  "homepage": "https://github.com/your-org/docflow",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "devEngines": {
+    "packageManager": {
+      "name": "pnpm",
+      "version": "^11.9.0",
+      "onFail": "download"
+    }
+  },
+  "type": "module",
+  "devDependencies": {
+    "concurrently": "^10.0.3",
+    "electron": "^43.0.0",
+    "wait-on": "^9.0.10"
+  },
+  "dependencies": {
+    "pdf-lib": "^1.17.1",
+    "pdfjs-dist": "^6.1.200"
+  }
+}

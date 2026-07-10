@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Docflow Documentation
+    url: https://github.com/your-org/docflow/docs
+    about: Check the documentation before opening an issue
+  - name: Security Issues
+    url: https://github.com/your-org/docflow/security/policy
+    about: Report security vulnerabilities here

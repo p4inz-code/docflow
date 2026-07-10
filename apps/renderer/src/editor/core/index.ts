@@ -1,0 +1,37 @@
+/**
+ * core/index.ts — Core barrel export
+ */
+
+export {
+  MIN_OBJECT_SIZE,
+  MAX_OBJECT_SIZE,
+  DEFAULT_FONT_FAMILY,
+  DEFAULT_FONT_SIZE,
+  DEFAULT_FONT_WEIGHT,
+  DEFAULT_STROKE_WIDTH,
+  DEFAULT_FILL_COLOR,
+  DEFAULT_STROKE_COLOR,
+  DEFAULT_TEXT_COLOR,
+  DEFAULT_HIGHLIGHT_COLOR,
+  DEFAULT_OPACITY,
+  SELECTION_TOLERANCE,
+  MARQUEE_THRESHOLD,
+  HANDLE_SIZE,
+  SNAP_DISTANCE,
+  GRID_SIZE,
+  MAX_HISTORY_ENTRIES,
+  MIN_ZOOM,
+  MAX_ZOOM,
+  ZOOM_STEP,
+  WHEEL_ZOOM_STEP,
+  MIN_NEW_OBJECT_WIDTH,
+  MIN_NEW_OBJECT_HEIGHT,
+} from "./constants";
+
+export type {
+  EventRoute,
+} from "./EventFlow";
+
+export {
+  createRoute,
+} from "./EventFlow";
