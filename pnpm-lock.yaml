@@ -213,6 +213,18 @@ importers:
       electron:
         specifier: ^43.0.0
         version: 43.0.0
+      oxlint:
+        specifier: ^1.71.0
+        version: 1.73.0
+      typescript:
+        specifier: ~6.0.2
+        version: 6.0.3
+      vite:
+        specifier: ^8.1.1
+        version: 8.1.4(@types/node@24.13.2)
+      vitest:
+        specifier: ^4.1.10
+        version: 4.1.10(@types/node@24.13.2)(happy-dom@20.10.6)(vite@8.1.4(@types/node@24.13.2))
       wait-on:
         specifier: ^9.0.10
         version: 9.0.10
