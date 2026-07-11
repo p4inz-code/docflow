@@ -18,7 +18,7 @@
  * configurable dimensions.
  */
 
-import type { Point, Rect } from "../types/editor";
+import type { Point } from "../types/editor";
 import type { EditableObject } from "../types/objects";
 import { ObjectType } from "../types/objects";
 import type { WhiteoutObject } from "../types/editing";
@@ -65,12 +65,12 @@ export class WhiteoutManager {
       },
     };
 
-    store.addOverlayObject(whiteout);
+    store.addOverlayObject(whiteout as unknown as EditableObject);
 
     // Create text object on top
     const textId = `text_${generateId()}`;
     const padding = 8;
-    const textObject: EditableObject = {
+    const textObject = {
       id: textId,
       type: ObjectType.Text,
       page,
@@ -107,8 +107,8 @@ export class WhiteoutManager {
   /**
    * Check if an object is a whiteout overlay.
    */
-  isWhiteout(object: EditableObject): boolean {
-    return (object as WhiteoutObject).type === "whiteout";
+  isWhiteout(object: Record<string, unknown>): boolean {
+    return object.type === "whiteout";
   }
 }
 

@@ -9,9 +9,9 @@
  * Integrates with the InspectorPanel and editor store.
  */
 
-import { useCallback, useMemo } from "react";
+import { useCallback } from "react";
 import { useEditorStore } from "../editor/state/editorStore";
-import type { EditableObject, ImageObject } from "../editor/types/objects";
+import type { EditableObject } from "../editor/types/objects";
 
 interface ImageEditorPanelProps {
   object: EditableObject;

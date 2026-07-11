@@ -18,7 +18,7 @@
 
 import { useCallback, useMemo } from "react";
 import { useEditorStore } from "../editor/state/editorStore";
-import type { EditableObject } from "../editor/types/objects";
+import type { EditableObject, EditableObjectBase } from "../editor/types/objects";
 import ImageEditorPanel from "./ImageEditorPanel";
 
 // ── Styles ─────────────────────────────────────────────────────────
@@ -106,11 +106,9 @@ const styles = {
   },
 };
 
-// ── Color presets ──────────────────────────────────────────────────
-const COLOR_PRESETS = [
-  "#000000", "#ffffff", "#ff0000", "#00ff00", "#0000ff",
-  "#ffff00", "#ff00ff", "#00ffff", "#888888", "#ff8800",
-];
+// ── Color presets (reserved for future use) ──────────────────────────
+// Reserved: "#000000", "#ffffff", "#ff0000", "#00ff00", "#0000ff",
+// Reserved: "#ffff00", "#ff00ff", "#00ffff", "#888888", "#ff8800"
 
 // ── Inspector Panel ────────────────────────────────────────────────
 export default function InspectorPanel() {
@@ -152,7 +150,7 @@ export default function InspectorPanel() {
         <ImageEditorPanel object={activeObject} />
       )}
       {activeObject.type === "signature" && (
-        <ImageSection object={activeObject} onUpdate={updateOverlayObject} />
+        <ImageSection object={activeObject} />
       )}
       {activeObject.type === "drawing" && (
         <DrawingSection object={activeObject} onUpdate={updateOverlayObject} />
@@ -172,7 +170,7 @@ export default function InspectorPanel() {
 
 // ── Section Components ─────────────────────────────────────────────
 
-function TransformSection({ object, onUpdate }: { object: EditableObject; onUpdate: (id: string, updates: Partial<EditableObject>) => void }) {
+function TransformSection({ object, onUpdate }: { object: EditableObject; onUpdate: (id: string, updates: Partial<EditableObjectBase> & Record<string, unknown>) => void }) {
   const setPos = useCallback((field: "x" | "y", value: string) => {
     const num = parseFloat(value);
     if (isNaN(num)) return;
@@ -249,7 +247,7 @@ function TransformSection({ object, onUpdate }: { object: EditableObject; onUpda
   );
 }
 
-function TextSection({ object, onUpdate }: { object: EditableObject; onUpdate: (id: string, updates: Partial<EditableObject>) => void }) {
+function TextSection({ object, onUpdate }: { object: EditableObject; onUpdate: (id: string, updates: Partial<EditableObjectBase> & Record<string, unknown>) => void }) {
   const data = object.data as Record<string, unknown>;
 
   const updateData = useCallback((field: string, value: unknown) => {
@@ -324,7 +322,7 @@ function TextSection({ object, onUpdate }: { object: EditableObject; onUpdate: (
   );
 }
 
-function ShapeSection({ object, onUpdate }: { object: EditableObject; onUpdate: (id: string, updates: Partial<EditableObject>) => void }) {
+function ShapeSection({ object, onUpdate }: { object: EditableObject; onUpdate: (id: string, updates: Partial<EditableObjectBase> & Record<string, unknown>) => void }) {
   const data = object.data as Record<string, unknown>;
 
   const updateData = useCallback((field: string, value: unknown) => {
@@ -380,7 +378,7 @@ function ShapeSection({ object, onUpdate }: { object: EditableObject; onUpdate: 
   );
 }
 
-function ImageSection({ object, onUpdate }: { object: EditableObject; onUpdate: (id: string, updates: Partial<EditableObject>) => void }) {
+function ImageSection({ object }: { object: EditableObject }) {
   return (
     <div style={styles.section}>
       <div style={styles.sectionTitle}>Image</div>
@@ -396,7 +394,7 @@ function ImageSection({ object, onUpdate }: { object: EditableObject; onUpdate: 
   );
 }
 
-function DrawingSection({ object, onUpdate }: { object: EditableObject; onUpdate: (id: string, updates: Partial<EditableObject>) => void }) {
+function DrawingSection({ object, onUpdate }: { object: EditableObject; onUpdate: (id: string, updates: Partial<EditableObjectBase> & Record<string, unknown>) => void }) {
   const data = object.data as Record<string, unknown>;
 
   const updateData = useCallback((field: string, value: unknown) => {
@@ -431,7 +429,7 @@ function DrawingSection({ object, onUpdate }: { object: EditableObject; onUpdate
   );
 }
 
-function HighlightSection({ object, onUpdate }: { object: EditableObject; onUpdate: (id: string, updates: Partial<EditableObject>) => void }) {
+function HighlightSection({ object, onUpdate }: { object: EditableObject; onUpdate: (id: string, updates: Partial<EditableObjectBase> & Record<string, unknown>) => void }) {
   const data = object.data as Record<string, unknown>;
 
   const updateData = useCallback((field: string, value: unknown) => {
@@ -456,7 +454,7 @@ function HighlightSection({ object, onUpdate }: { object: EditableObject; onUpda
   );
 }
 
-function StampSection({ object, onUpdate }: { object: EditableObject; onUpdate: (id: string, updates: Partial<EditableObject>) => void }) {
+function StampSection({ object, onUpdate }: { object: EditableObject; onUpdate: (id: string, updates: Partial<EditableObjectBase> & Record<string, unknown>) => void }) {
   const data = object.data as Record<string, unknown>;
 
   const updateData = useCallback((field: string, value: unknown) => {
@@ -489,7 +487,7 @@ function StampSection({ object, onUpdate }: { object: EditableObject; onUpdate: 
   );
 }
 
-function OpacitySection({ object, onUpdate }: { object: EditableObject; onUpdate: (id: string, updates: Partial<EditableObject>) => void }) {
+function OpacitySection({ object, onUpdate }: { object: EditableObject; onUpdate: (id: string, updates: Partial<EditableObjectBase> & Record<string, unknown>) => void }) {
   const setOpacity = useCallback((value: string) => {
     const num = parseFloat(value);
     if (isNaN(num)) return;

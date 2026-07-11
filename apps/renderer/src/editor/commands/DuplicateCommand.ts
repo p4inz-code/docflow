@@ -5,7 +5,7 @@
  * command. Stores the duplicated object IDs so undo() can remove them.
  */
 
-import { BaseCommand, noopResult } from "./base";
+import { BaseCommand } from "./base";
 import type { CommandResult, CommandType } from "../types/commands";
 import { CommandType as CT } from "../types/commands";
 import type { EditableObject } from "../types/objects";

@@ -15,9 +15,7 @@
  *   are modified and the renderer is refreshed.
  */
 
-import { useEditorStore } from "../state/editorStore";
 import { useWorkspaceStore } from "../workspace/WorkspaceStore";
-import { generateId } from "../utils/id";
 
 // ── Page Operation State ───────────────────────────────────────────
 export interface PageState {
@@ -181,7 +179,7 @@ export class PageOperations {
     });
   }
 
-  private _notifyPageCount(count: number): void {
+  private _notifyPageCount(_count: number): void {
     // Future: update workspace store or trigger re-render
   }
 

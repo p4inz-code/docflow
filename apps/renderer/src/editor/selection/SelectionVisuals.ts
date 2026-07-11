@@ -21,9 +21,8 @@ import { HANDLE_SIZE } from "../core/constants";
 // ── Selection Visuals ──────────────────────────────────────────────
 export class SelectionVisuals {
   private _selectionLayer: HTMLElement;
-  private _box: HTMLElement | null = null;
   private _handles: HTMLElement[] = [];
-  private _rotationHandle: HTMLElement | null = null;
+
 
   constructor(selectionLayer: HTMLElement) {
     this._selectionLayer = selectionLayer;
@@ -49,7 +48,6 @@ export class SelectionVisuals {
       box.style.pointerEvents = "none";
       box.style.boxSizing = "border-box";
       this._selectionLayer.appendChild(box);
-      this._box = box;
 
       // Resize handles at corners and midpoints
       this._createHandle(bounds.x - HANDLE_SIZE / 2, bounds.y - HANDLE_SIZE / 2, "nw-resize");
@@ -69,9 +67,7 @@ export class SelectionVisuals {
   /** Clear all selection visuals. */
   clear(): void {
     this._selectionLayer.innerHTML = "";
-    this._box = null;
     this._handles = [];
-    this._rotationHandle = null;
   }
 
   /** Hide/Show selection visuals. */
@@ -115,6 +111,5 @@ export class SelectionVisuals {
     handle.style.zIndex = "1";
     handle.className = "pdf-overlay-rotation-handle";
     this._selectionLayer.appendChild(handle);
-    this._rotationHandle = handle;
   }
 }

@@ -5,7 +5,7 @@
  * command. Stores the deleted objects so undo() can restore them.
  */
 
-import { BaseCommand, noopResult } from "./base";
+import { BaseCommand } from "./base";
 import type { CommandResult, CommandType } from "../types/commands";
 import { CommandType as CT } from "../types/commands";
 import type { EditableObject } from "../types/objects";

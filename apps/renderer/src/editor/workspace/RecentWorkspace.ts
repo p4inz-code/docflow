@@ -62,7 +62,9 @@ export class RecentWorkspace {
         };
         localStorage.setItem(STORAGE_KEY, JSON.stringify(toStore));
       } catch {
-        // Storage may be full
+        if (process.env.NODE_ENV !== "production") {
+          console.warn("[RecentWorkspace] Failed to save workspace session");
+        }
       }
     }, 500);
   }
@@ -74,6 +76,9 @@ export class RecentWorkspace {
       if (!stored) return null;
       return JSON.parse(stored) as WorkspaceSession;
     } catch {
+      if (process.env.NODE_ENV !== "production") {
+        console.warn("[RecentWorkspace] Failed to restore workspace session");
+      }
       return null;
     }
   }
@@ -83,7 +88,9 @@ export class RecentWorkspace {
     try {
       localStorage.removeItem(STORAGE_KEY);
     } catch {
-      // Ignore
+      if (process.env.NODE_ENV !== "production") {
+        console.warn("[RecentWorkspace] Failed to clear workspace session");
+      }
     }
   }
 

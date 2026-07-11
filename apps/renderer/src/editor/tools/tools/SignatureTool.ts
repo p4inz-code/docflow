@@ -96,7 +96,7 @@ export class SignatureTool implements Tool {
     input.accept = ACCEPTED_TYPES;
     input.style.display = "none";
 
-    input.addEventListener("change", () => {
+    const changeHandler = () => {
       const file = input.files?.[0];
       if (!file) {
         input.remove();
@@ -113,10 +113,26 @@ export class SignatureTool implements Tool {
         input.remove();
       };
       reader.readAsDataURL(file);
-    });
+    };
+    input.addEventListener("change", changeHandler, { once: true });
 
     document.body.appendChild(input);
     input.click();
+
+    // Clean up the input element if dialog is cancelled
+    const cleanupTimer = setTimeout(() => {
+      if (input.parentNode) {
+        input.remove();
+      }
+    }, 5000);
+
+    // Clean up on window focus regain (dialog closed without selection)
+    window.addEventListener("focus", () => {
+      clearTimeout(cleanupTimer);
+      if (input.parentNode) {
+        input.remove();
+      }
+    }, { once: true });
   }
 
   private _createSignature(
@@ -124,7 +140,6 @@ export class SignatureTool implements Tool {
     x: number,
     y: number,
   ): void {
-    const store = useEditorStore.getState();
     const now = Date.now();
     const newId = `sig_${generateId()}`;
 

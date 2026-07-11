@@ -5,7 +5,7 @@
  * transformation, smart guides, and whiteout overlays.
  */
 
-import type { Point, Rect } from "./editor";
+import type { Point } from "./editor";
 import type { EditableObject } from "./objects";
 
 // ── Editing State ──────────────────────────────────────────────────
@@ -76,15 +76,20 @@ export interface GuideState {
 }
 
 // ── Whiteout Object ────────────────────────────────────────────────
-export const ObjectTypeWhiteout = {
-  Whiteout: "whiteout",
-} as const;
-
-export type WhiteoutOverrideType = "whiteout";
-
 /** A whiteout overlay that covers original PDF text (Option B). */
-export interface WhiteoutObject extends EditableObject {
-  type: WhiteoutOverrideType;
+export interface WhiteoutObject {
+  id: string;
+  type: "whiteout";
+  page: number;
+  position: { x: number; y: number };
+  size: { width: number; height: number };
+  rotation: number;
+  opacity: number;
+  locked: boolean;
+  visible: boolean;
+  selected: boolean;
+  createdAt: number;
+  updatedAt: number;
   data: {
     /** Fill color of the whiteout (defaults to white). */
     fillColor?: string;

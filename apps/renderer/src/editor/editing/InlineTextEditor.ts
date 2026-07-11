@@ -15,14 +15,11 @@
  *   - Auto-cancel when empty
  */
 
-import type { EditableObject, TextObject } from "../types/objects";
-import type { Point } from "../types/editor";
-import { useEditorStore } from "../state/editorStore";
+import type { EditableObject } from "../types/objects";
 
 // ── Inline Editor Controller ───────────────────────────────────────
 export class InlineTextEditor {
   private _element: HTMLElement | null = null;
-  private _object: EditableObject | null = null;
   private _active = false;
   private _onFinish: ((content: string) => void) | null = null;
   private _onCancel: (() => void) | null = null;
@@ -39,7 +36,6 @@ export class InlineTextEditor {
     // Clean up any previous editing session
     this.stopEditing();
 
-    this._object = object;
     this._element = element;
     this._active = true;
     this._onFinish = callbacks.onFinish;
@@ -96,7 +92,6 @@ export class InlineTextEditor {
     el.removeEventListener("paste", this._handlePaste);
 
     this._element = null;
-    this._object = null;
     this._active = false;
     this._onFinish = null;
     this._onCancel = null;

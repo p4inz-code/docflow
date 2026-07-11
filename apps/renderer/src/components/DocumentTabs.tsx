@@ -11,6 +11,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useWorkspaceStore } from "../editor/workspace/WorkspaceStore";
 import type { WorkspaceDocument } from "../editor/workspace/WorkspaceStore";
+import { X, Plus } from "./Icons";
 
 // ── Styles ─────────────────────────────────────────────────────────
 const styles = {
@@ -24,7 +25,7 @@ const styles = {
     flexShrink: 0,
     userSelect: "none" as const,
   },
-  tab: (isActive: boolean, isDirty: boolean): React.CSSProperties => ({
+  tab: (isActive: boolean, _isDirty: boolean): React.CSSProperties => ({
     display: "flex",
     alignItems: "center",
     gap: 6,
@@ -112,7 +113,8 @@ export default function DocumentTabs({
   const closeDocument = useWorkspaceStore((s) => s.closeDocument);
   const closeOtherDocuments = useWorkspaceStore((s) => s.closeOtherDocuments);
   const closeAllDocuments = useWorkspaceStore((s) => s.closeAllDocuments);
-  const reorderDocuments = useWorkspaceStore((s) => s.reorderDocuments);
+  const _reorderDocuments = useWorkspaceStore((s) => s.reorderDocuments);
+  void _reorderDocuments;
 
   const [dragState, setDragState] = useState<DragState | null>(null);
   const barRef = useRef<HTMLDivElement>(null);
@@ -197,11 +199,11 @@ export default function DocumentTabs({
     (e: React.DragEvent) => {
       e.preventDefault();
       if (dragState && dragState.fromIndex !== dragState.toIndex) {
-        reorderDocuments(dragState.fromIndex, dragState.toIndex);
+        _reorderDocuments(dragState.fromIndex, dragState.toIndex);
       }
       setDragState(null);
     },
-    [dragState, reorderDocuments],
+    [dragState, _reorderDocuments],
   );
 
   const handleDragEnd = useCallback(() => {
@@ -292,9 +294,9 @@ export default function DocumentTabs({
                   (e.target as HTMLElement).style.background = "transparent";
                   (e.target as HTMLElement).style.color = "#666";
                 }}
-              >
-                ✕
-              </button>
+          >
+            <X size={12} aria-hidden="true" />
+          </button>
             </div>
           );
         })}
@@ -316,7 +318,7 @@ export default function DocumentTabs({
             (e.target as HTMLElement).style.color = "#666";
           }}
         >
-          +
+          <Plus size={16} aria-hidden="true" />
         </button>
       )}
 

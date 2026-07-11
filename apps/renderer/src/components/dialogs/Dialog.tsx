@@ -7,6 +7,7 @@
  */
 
 import { useEffect, useRef, useCallback } from "react";
+import { X } from "../Icons";
 
 interface DialogProps {
   open: boolean;
@@ -128,7 +129,7 @@ export default function Dialog({
             }}
             aria-label="Close dialog"
           >
-            ✕
+            <X size={16} aria-hidden="true" />
           </button>
         </div>
 

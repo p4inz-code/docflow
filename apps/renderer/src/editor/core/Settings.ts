@@ -108,6 +108,9 @@ export class SettingsManager {
       }
     } catch {
       this._settings = { ...DEFAULT_SETTINGS };
+      if (process.env.NODE_ENV !== "production") {
+        console.warn("[Settings] Failed to parse stored settings, using defaults");
+      }
     }
   }
 
@@ -115,7 +118,9 @@ export class SettingsManager {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(this._settings));
     } catch {
-      // localStorage may be full
+      if (process.env.NODE_ENV !== "production") {
+        console.warn("[Settings] localStorage may be full; settings not persisted");
+      }
     }
   }
 
@@ -125,7 +130,9 @@ export class SettingsManager {
       try {
         listener(settings);
       } catch {
-        // Silently handle listener errors
+        if (process.env.NODE_ENV !== "production") {
+          console.warn("[Settings] A settings listener threw an error");
+        }
       }
     }
   }

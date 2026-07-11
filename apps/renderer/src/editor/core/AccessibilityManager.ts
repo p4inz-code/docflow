@@ -240,7 +240,7 @@ export class AccessibilityManager {
 
   private _loadSettings(): void {
     try {
-      const settings = settingsManager.get() as Record<string, unknown>;
+      const settings = settingsManager.get() as unknown as Record<string, unknown>;
       this._state.highContrast = (settings.highContrast as boolean) ?? false;
       this._state.reducedMotion =
         (settings.reducedMotion as boolean) ?? AccessibilityManager.prefersReducedMotion();
@@ -250,13 +250,13 @@ export class AccessibilityManager {
       this._state.alwaysShowFocus =
         (settings.alwaysShowFocus as boolean) ?? true;
     } catch {
-      // Use defaults
+      // Use defaults for accessibility settings
     }
   }
 
   private _saveSettings(): void {
     try {
-      const settings = settingsManager.get() as Record<string, unknown>;
+      const settings = settingsManager.get() as unknown as Record<string, unknown>;
       settingsManager.update({
         ...settings,
         highContrast: this._state.highContrast,
@@ -266,7 +266,7 @@ export class AccessibilityManager {
         alwaysShowFocus: this._state.alwaysShowFocus,
       } as Partial<AppSettings>);
     } catch {
-      // Ignore
+      // Accessibility settings not critical
     }
   }
 }

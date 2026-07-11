@@ -9,3 +9,4 @@ export { DrawingRenderer } from "./DrawingRenderer";
 export { HighlightRenderer } from "./HighlightRenderer";
 export { SignatureRenderer } from "./SignatureRenderer";
 export { StampRenderer } from "./StampRenderer";
+export { WhiteoutRenderer } from "./WhiteoutRenderer";

@@ -22,8 +22,8 @@ export class CreateObjectCommand extends BaseCommand {
 
   constructor(
     id: string,
-    label: string,
     private _objectFactory: () => EditableObject,
+    label: string = "Create Object",
   ) {
     super(id, CT.CreateObject as CommandType, label);
   }

@@ -4,7 +4,7 @@
  * Purpose: Encapsulate resizing an object as an undoable command.
  */
 
-import { BaseCommand, noopResult } from "./base";
+import { BaseCommand } from "./base";
 import type { CommandResult, CommandType } from "../types/commands";
 import { CommandType as CT } from "../types/commands";
 import type { Point } from "../types/editor";

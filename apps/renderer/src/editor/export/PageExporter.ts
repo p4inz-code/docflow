@@ -8,7 +8,7 @@
  * or a range of pages.
  */
 
-import { type PDFDocument, type PDFPage } from "pdf-lib";
+import { type PDFDocument } from "pdf-lib";
 import type { EditableObject } from "../types/objects";
 import type { ExportRange, ExportError } from "./types";
 import { OverlayFlattener } from "./OverlayFlattener";

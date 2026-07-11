@@ -11,16 +11,16 @@
 import { BaseCommand, noopResult } from "./base";
 import type { CommandResult, CommandType } from "../types/commands";
 import { CommandType as CT } from "../types/commands";
-import type { EditableObject } from "../types/objects";
+import type { EditableObjectBase } from "../types/objects";
 import { useEditorStore } from "../state/editorStore";
 
 export class EditPropertiesCommand extends BaseCommand {
-  private _originalObject: EditableObject | null = null;
+  private _originalObject: EditableObjectBase & Record<string, unknown> | null = null;
 
   constructor(
     id: string,
     private _objectId: string,
-    private _newProperties: Partial<EditableObject>,
+    private _newProperties: Partial<EditableObjectBase> & Record<string, unknown>,
     private _dataOverride?: Record<string, unknown>,
     label: string = "Edit Properties",
   ) {
@@ -35,7 +35,7 @@ export class EditPropertiesCommand extends BaseCommand {
     // Store original for undo
     this._originalObject = { ...obj, data: { ...obj.data } };
 
-    const changes: Partial<EditableObject> = { ...this._newProperties };
+    const changes = { ...this._newProperties } as Partial<EditableObjectBase> & Record<string, unknown>;
 
     if (this._dataOverride) {
       changes.data = { ...obj.data, ...this._dataOverride };

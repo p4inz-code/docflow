@@ -16,7 +16,12 @@ export {
   HighlightRenderer,
   SignatureRenderer,
   StampRenderer,
+  WhiteoutRenderer,
 } from "./renderers";
 
 export { OverlayRenderer } from "./OverlayRenderer";
 export type { OverlayRendererProps } from "./OverlayRenderer";
+
+export { CanvasPool } from "./CanvasPool";
+export { LRUCache } from "./LRUCache";
+export { VirtualPageRenderer } from "./VirtualPageRenderer";

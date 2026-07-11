@@ -104,7 +104,6 @@ export class StampTool implements Tool {
 
   // ── Private ──────────────────────────────────────────────────────
   private _createStamp(x: number, y: number): void {
-    const store = useEditorStore.getState();
     const now = Date.now();
     const newId = `stamp_${generateId()}`;
 

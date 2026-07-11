@@ -6,7 +6,7 @@
  * All operations are undoable through the command pipeline.
  */
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import Dialog from "./Dialog";
 import { pageOperations } from "../../editor/operations/PageOperations";
 import { useActiveDocument } from "../../editor/workspace/WorkspaceStore";
@@ -29,11 +29,11 @@ export default function PageManagerDialog({
   const totalPages = doc?.pdf?.numPages ?? 0;
 
   // Reset selection when opening
-  useState(() => {
+  useEffect(() => {
     if (open) {
       setSelectedPages(new Set());
     }
-  });
+  }, [open]);
 
   const togglePage = useCallback((pageNum: number) => {
     setSelectedPages((prev) => {

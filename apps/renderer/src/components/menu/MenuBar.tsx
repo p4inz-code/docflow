@@ -17,7 +17,7 @@ import { clipboardManager } from "../../editor/editing/ClipboardManager";
 import { ToolType } from "../../editor/types/tools";
 import { commandPipeline } from "../../editor/core/CommandPipeline";
 import { settingsManager } from "../../editor/core/Settings";
-import { recentFilesManager } from "../../editor/editing/RecentFilesManager";
+
 
 // ── Props ──────────────────────────────────────────────────────────
 interface MenuBarProps {
@@ -34,6 +34,7 @@ interface MenuBarProps {
   onDocumentProperties?: () => void;
   onPreferences?: () => void;
   onAbout?: () => void;
+  onExport?: () => void;
 }
 
 // ── Menu Definitions ───────────────────────────────────────────────
@@ -77,7 +78,7 @@ function buildMenus(props: MenuBarProps): MenuDefinition[] {
             {
               label: "Open Recent",
               action: () => {},
-              enabled: () => recentFilesCount() > 0,
+              enabled: () => false,
             },
             {
               label: "Close",
@@ -126,13 +127,9 @@ function buildMenus(props: MenuBarProps): MenuDefinition[] {
           items: [
             {
               label: "Export...",
-              action: () => {},
-              enabled: () => false,
-            },
-            {
-              label: "Export as PNG",
-              action: () => {},
-              enabled: () => false,
+              action: () => props.onExport?.(),
+              enabled: () =>
+                useWorkspaceStore.getState().documents.length > 0,
             },
           ],
         },
@@ -545,10 +542,6 @@ function buildMenus(props: MenuBarProps): MenuDefinition[] {
   ];
 }
 
-function recentFilesCount(): number {
-  return recentFilesManager.count;
-}
-
 // ── Component ──────────────────────────────────────────────────────
 export default function MenuBar(props: MenuBarProps) {
   const [openMenu, setOpenMenu] = useState<string | null>(null);
@@ -571,7 +564,7 @@ export default function MenuBar(props: MenuBarProps) {
   }, []);
 
   const handleAction = useCallback(
-    (menuLabel: string, action: () => void) => {
+    (_menuLabel: string, action: () => void) => {
       action();
       setOpenMenu(null);
     },
@@ -616,10 +609,8 @@ export default function MenuBar(props: MenuBarProps) {
                 : "#222";
             }}
             onMouseLeave={(e) => {
-              if (openMenu !== menu.label) {
-                (e.target as HTMLElement).style.background =
-                  "transparent";
-              }
+              (e.target as HTMLElement).style.background =
+                "transparent";
             }}
           >
             {menu.label}

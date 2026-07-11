@@ -34,7 +34,6 @@ export class EraseTool implements Tool {
   readonly cursor = CursorStyle.NotAllowed;
 
   private _hoveredId: string | null = null;
-  private _originalOutline: string = "";
 
   onActivate(): void {
     document.body.style.cursor = "not-allowed";
@@ -63,8 +62,6 @@ export class EraseTool implements Tool {
     if (hitObject && hitObject.id !== this._hoveredId) {
       this._clearHover();
       this._hoveredId = hitObject.id;
-      // Highlight the object by adding a delete indicator
-      this._originalOutline = hitObject.selected ? "2px solid #4a9eff" : "";
       // We can't directly modify DOM from the tool, but we can set hover state
       store.setHoveredObjectId(hitObject.id);
     } else if (!hitObject && this._hoveredId) {

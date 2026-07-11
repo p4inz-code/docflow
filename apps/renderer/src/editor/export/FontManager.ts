@@ -78,8 +78,10 @@ export class FontManager {
       const font = await this._pdfDoc.embedStandardFont(resolved.standardFont);
       this._embeddedFonts.set(cacheKey, font);
       return font;
-    } catch {
-      // Fallback to Helvetica
+    } catch (err) {
+      if (process.env.NODE_ENV !== "production") {
+        console.warn("[FontManager] Failed to embed font, falling back to Helvetica:", err);
+      }
       const fallback = await this._pdfDoc.embedStandardFont(StandardFonts.Helvetica);
       this._embeddedFonts.set(cacheKey, fallback);
       return fallback;

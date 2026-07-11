@@ -28,10 +28,4 @@ export {
   MIN_NEW_OBJECT_HEIGHT,
 } from "./constants";
 
-export type {
-  EventRoute,
-} from "./EventFlow";
 
-export {
-  createRoute,
-} from "./EventFlow";

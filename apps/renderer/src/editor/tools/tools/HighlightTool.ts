@@ -153,7 +153,6 @@ export class HighlightTool implements Tool {
     width: number,
     height: number,
   ): void {
-    const store = useEditorStore.getState();
     const now = Date.now();
     const newId = `highlight_${generateId()}`;
 

@@ -361,7 +361,7 @@ export class ImportEngine {
       }
       return { valid: true };
     } catch {
-      return { valid: false, reason: "Could not read file" };
+      return { valid: false, reason: "Could not read file header" };
     }
   }
 
@@ -369,8 +369,11 @@ export class ImportEngine {
   private _fileToDataUrl(file: File): Promise<string> {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
-      reader.onload = () => resolve(reader.result as string);
+      reader.onload = () => {
+        resolve(reader.result as string);
+      };
       reader.onerror = () => reject(new Error("Failed to read file"));
+      reader.onabort = () => reject(new Error("File read was aborted"));
       reader.readAsDataURL(file);
     });
   }
@@ -379,8 +382,11 @@ export class ImportEngine {
     return new Promise((resolve, reject) => {
       const blob = file.slice(0, bytes);
       const reader = new FileReader();
-      reader.onload = () => resolve(new Uint8Array(reader.result as ArrayBuffer));
+      reader.onload = () => {
+        resolve(new Uint8Array(reader.result as ArrayBuffer));
+      };
       reader.onerror = () => reject(new Error("Failed to read file header"));
+      reader.onabort = () => reject(new Error("File read was aborted"));
       reader.readAsArrayBuffer(blob);
     });
   }

@@ -1,11 +1,25 @@
+/**
+ * PDFViewer.tsx — PDF Page Viewer with Virtual Rendering
+ *
+ * Purpose: Render PDF pages using the VirtualPageRenderer for
+ * efficient memory usage on large documents.
+ *
+ * Features:
+ *   - Virtual page rendering — only visible pages consume memory
+ *   - CanvasPool for canvas reuse (reduces GC pressure)
+ *   - pdfjs page disposal after render (frees worker memory)
+ *   - ResizeObserver on container for automatic re-render
+ *   - Ctrl+scroll zoom, drag-to-pan at high zoom levels
+ *   - Overlay rendering (annotations, text, shapes, etc.)
+ */
+
 import { useEffect, useRef, useState, useCallback } from "react";
 import type { PDFDocumentProxy } from "pdfjs-dist";
 import { useEditorStore } from "../editor/state/editorStore";
 import { RenderingManager } from "../editor/rendering/RenderingManager";
+import { VirtualPageRenderer } from "../editor/rendering/VirtualPageRenderer";
 import { OverlayRenderer } from "../editor/rendering/OverlayRenderer";
-import { keyboardShortcuts } from "../editor/editing/KeyboardShortcuts";
-import { settingsManager } from "../editor/core/Settings";
-import Toolbar from "./Toolbar";
+import { viewerErrorHandler } from "../editor/core/ErrorManager";
 import InspectorPanel from "./InspectorPanel";
 import StatusBar from "./StatusBar";
 import ContextMenu from "./ContextMenu";
@@ -13,20 +27,18 @@ import SearchPanel from "./SearchPanel";
 
 interface PDFViewerProps {
   pdf: PDFDocumentProxy;
-  sidebarVisible?: boolean;
-  onToggleSidebar?: () => void;
-  onOpenPageManager?: () => void;
+  zoomLevel: number;
+  fitMode: "width" | "page";
+  onZoomIn: () => void;
+  onZoomOut: () => void;
 }
 
-type FitMode = "width" | "page";
-
-export default function PDFViewer({ pdf, sidebarVisible, onToggleSidebar, onOpenPageManager }: PDFViewerProps) {
+export default function PDFViewer({ pdf, zoomLevel, fitMode, onZoomIn, onZoomOut }: PDFViewerProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const pagesRef = useRef<HTMLDivElement>(null);
-  const [zoomLevel, setZoomLevel] = useState(settingsManager.get("defaultZoom"));
-  const [fitMode, setFitMode] = useState<FitMode>(settingsManager.get("defaultFitMode"));
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const managerRef = useRef<RenderingManager | null>(null);
+  const virtualRendererRef = useRef<VirtualPageRenderer | null>(null);
   const [activePage, setActivePage] = useState(1);
   const [searchOpen, setSearchOpen] = useState(false);
   const pageCount = pdf.numPages;
@@ -41,15 +53,21 @@ export default function PDFViewer({ pdf, sidebarVisible, onToggleSidebar, onOpen
   const isDragging = useRef(false);
   const dragStart = useRef({ x: 0, y: 0 });
   const panAtDragStart = useRef({ x: 0, y: 0 });
+  const zoomRef = useRef(zoomLevel);
+  const fitModeRef = useRef(fitMode);
+  zoomRef.current = zoomLevel;
+  fitModeRef.current = fitMode;
+  const onZoomInRef = useRef(onZoomIn);
+  const onZoomOutRef = useRef(onZoomOut);
+  onZoomInRef.current = onZoomIn;
+  onZoomOutRef.current = onZoomOut;
 
   // Sync editor store
   const setStoreActivePage = useEditorStore((s) => s.setActivePage);
   const isDirty = useEditorStore((s) => s.isDirty);
 
-  // ── Keyboard shortcuts ──
+  // ── Ctrl+F for search ──
   useEffect(() => {
-    keyboardShortcuts.attach();
-    // Add Ctrl+F for search
     const handleSearch = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === "f") {
         e.preventDefault();
@@ -58,7 +76,6 @@ export default function PDFViewer({ pdf, sidebarVisible, onToggleSidebar, onOpen
     };
     document.addEventListener("keydown", handleSearch);
     return () => {
-      keyboardShortcuts.detach();
       document.removeEventListener("keydown", handleSearch);
     };
   }, []);
@@ -102,86 +119,41 @@ export default function PDFViewer({ pdf, sidebarVisible, onToggleSidebar, onOpen
     return () => scrollEl.removeEventListener("scroll", handleScroll);
   }, [activePage, setStoreActivePage]);
 
-  // ── Render pages ──
+  // ── Initialize virtual page renderer ──
   useEffect(() => {
     const pagesEl = pagesRef.current;
     const scrollEl = scrollRef.current;
     if (!pagesEl || !scrollEl) return;
 
-    let cancelled = false;
+    // Destroy previous virtual renderer if exists
+    virtualRendererRef.current?.destroy();
 
-    (async () => {
-      try {
-        pagesEl.innerHTML = "";
-        const containerWidth = scrollEl.clientWidth;
-        if (containerWidth <= 0) return;
+    // Create and initialize new virtual renderer
+    const renderer = new VirtualPageRenderer(pdf, manager, pagesEl, scrollEl);
+    virtualRendererRef.current = renderer;
 
-        const totalPages = pdf.numPages;
-
-        for (let i = 1; i <= totalPages; i++) {
-          if (cancelled) return;
-
-          const page = await pdf.getPage(i);
-          if (cancelled) return;
-
-          const unscaledViewport = page.getViewport({ scale: 1 });
-
-          let baseScale: number;
-          if (fitMode === "page") {
-            const containerHeight = scrollEl.clientHeight;
-            const scaleW = (containerWidth - 48) / unscaledViewport.width;
-            const scaleH = (containerHeight - 48) / unscaledViewport.height;
-            baseScale = Math.min(scaleW, scaleH);
-          } else {
-            baseScale = (containerWidth - 48) / unscaledViewport.width;
-          }
-
-          const scale = baseScale * zoomLevel;
-          const viewport = page.getViewport({ scale });
-
-          const wrapper = document.createElement("div");
-          wrapper.setAttribute("data-page-index", String(i));
-          wrapper.style.cssText = `
-            position: relative;
-            display: flex;
-            justify-content: center;
-            margin-bottom: ${i < totalPages ? "16px" : "0"};
-          `;
-
-          const canvas = document.createElement("canvas");
-          canvas.width = viewport.width;
-          canvas.height = viewport.height;
-          canvas.style.cssText = `box-shadow: 0 4px 24px rgba(0,0,0,0.5);`;
-
-          wrapper.appendChild(canvas);
-          manager.createPageContainer(i, wrapper);
-          pagesEl.appendChild(wrapper);
-
-          const ctx = canvas.getContext("2d");
-          if (!ctx) continue;
-
-          await page.render({ canvasContext: ctx, viewport }).promise;
-        }
-
-        if (!cancelled) {
-          setStoreActivePage(1);
-        }
-      } catch (err) {
-        if (!cancelled) {
-          if (process.env.NODE_ENV !== "production") {
-            console.error("Failed to render PDF:", err);
-          }
-        }
-      }
-    })();
+    renderer.initialize().catch((err) => {
+      viewerErrorHandler.error(
+        "Virtual Render Init",
+        `Failed to initialize virtual page renderer: ${err instanceof Error ? err.message : String(err)}`,
+      );
+    });
 
     return () => {
-      cancelled = true;
-      manager.destroyAllContainers();
+      renderer.destroy();
+      virtualRendererRef.current = null;
       setPan({ x: 0, y: 0 });
       panAtDragStart.current = { x: 0, y: 0 };
     };
-  }, [pdf, zoomLevel, fitMode, manager, setStoreActivePage]);
+  }, [pdf, manager]);
+
+  // ── Sync zoom/fitMode to virtual renderer ──
+  useEffect(() => {
+    const renderer = virtualRendererRef.current;
+    if (!renderer) return;
+    renderer.setZoom(zoomLevel, fitMode);
+    renderer.refreshVisible();
+  }, [zoomLevel, fitMode]);
 
   // ── Ctrl+scroll zoom ──
   useEffect(() => {
@@ -191,10 +163,8 @@ export default function PDFViewer({ pdf, sidebarVisible, onToggleSidebar, onOpen
     const handleWheel = (e: WheelEvent) => {
       if (!e.ctrlKey && !e.metaKey) return;
       e.preventDefault();
-      setZoomLevel((prev) => {
-        const delta = e.deltaY > 0 ? -0.1 : 0.1;
-        return Math.max(0.5, Math.min(3, +(prev + delta).toFixed(2)));
-      });
+      if (e.deltaY > 0) onZoomOutRef.current();
+      else onZoomInRef.current();
     };
 
     el.addEventListener("wheel", handleWheel, { passive: false });
@@ -204,14 +174,14 @@ export default function PDFViewer({ pdf, sidebarVisible, onToggleSidebar, onOpen
   // ── Pan ──
   const handleMouseDown = useCallback(
     (e: React.MouseEvent) => {
-      if (zoomLevel <= 1) return;
+      if (zoomRef.current <= 1) return;
       if (e.button !== 0) return;
       isDragging.current = true;
       dragStart.current = { x: e.clientX, y: e.clientY };
       panAtDragStart.current = { x: pan.x, y: pan.y };
       e.preventDefault();
     },
-    [zoomLevel, pan.x, pan.y],
+    [pan.x, pan.y],
   );
 
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
@@ -224,31 +194,6 @@ export default function PDFViewer({ pdf, sidebarVisible, onToggleSidebar, onOpen
 
   const handleMouseUp = useCallback(() => {
     isDragging.current = false;
-  }, []);
-
-  // ── Zoom controls ──
-  const zoomIn = useCallback(() => setZoomLevel((p) => Math.min(3, +(p + 0.1).toFixed(2))), []);
-  const zoomOut = useCallback(() => setZoomLevel((p) => Math.max(0.5, +(p - 0.1).toFixed(2))), []);
-  const handleFitWidth = useCallback(() => { setFitMode("width"); setZoomLevel(1); }, []);
-  const handleFitPage = useCallback(() => { setFitMode("page"); setZoomLevel(1); }, []);
-
-  const handleOpenFile = useCallback(() => {
-    const input = document.createElement("input");
-    input.type = "file";
-    input.accept = "application/pdf";
-    input.click();
-    input.addEventListener("change", () => {
-      const file = input.files?.[0];
-      if (file) {
-        const appInput = document.querySelector<HTMLInputElement>("#pdf-file-input");
-        if (appInput) {
-          const dt = new DataTransfer();
-          dt.items.add(file);
-          appInput.files = dt.files;
-          appInput.dispatchEvent(new Event("change", { bubbles: true }));
-        }
-      }
-    });
   }, []);
 
   const toggleSearch = useCallback(() => setSearchOpen((p) => !p), []);
@@ -271,21 +216,12 @@ export default function PDFViewer({ pdf, sidebarVisible, onToggleSidebar, onOpen
         position: "relative",
       }}
     >
-      <Toolbar
-        zoomLevel={zoomLevel}
-        onZoomIn={zoomIn}
-        onZoomOut={zoomOut}
-        onFitWidth={handleFitWidth}
-        onFitPage={handleFitPage}
-        onOpenFile={handleOpenFile}
-      />
-
       <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
         <div
           ref={scrollRef}
           style={{
             flex: 1,
-            overflow: scrollRef.current ? "auto" : "hidden",
+            overflow: "auto",
             cursor: zoomLevel > 1
               ? isDragging.current ? "grabbing" : "grab"
               : "default",

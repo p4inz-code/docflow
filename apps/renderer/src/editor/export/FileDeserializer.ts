@@ -15,7 +15,6 @@
 
 import type { EditableObject } from "../types/objects";
 import type { SerializedDocument } from "./types";
-import { CURRENT_FORMAT_VERSION } from "./types";
 import { ExportErrorCategory, createExportError } from "./types";
 import type { ExportError } from "./types";
 
@@ -101,7 +100,7 @@ export class FileDeserializer {
       }
 
       // Restore default values for any missing fields on objects
-      doc.overlayObjects = doc.overlayObjects.map((obj: Record<string, unknown>) => ({
+      doc.overlayObjects = (doc.overlayObjects as unknown as Record<string, unknown>[]).map((obj: Record<string, unknown>) => ({
         id: obj.id ?? "",
         type: obj.type ?? "text",
         page: (obj.page as number) ?? 1,

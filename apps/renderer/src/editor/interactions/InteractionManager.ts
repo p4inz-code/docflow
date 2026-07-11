@@ -27,7 +27,6 @@ import { EventType as EventTypeConst } from "../types/interaction";
 import type { InteractionPhase } from "../types/editor";
 import { InteractionPhase as InteractionPhaseConst } from "../types/editor";
 import type { ToolManager } from "../tools/ToolSystem";
-import { createRoute } from "../core/EventFlow";
 
 // ── Interaction Manager ────────────────────────────────────────────
 export class InteractionManager {
@@ -121,8 +120,6 @@ export class InteractionManager {
     const tool = this._toolManager.activeTool;
     if (!tool) return;
 
-    const route = createRoute(eventType, tool, event);
-
     switch (eventType) {
       case EventTypeConst.PointerDown:
         tool.onPointerDown(event);
@@ -146,8 +143,6 @@ export class InteractionManager {
         tool.onKeyUp(event.originalEvent as KeyboardEvent);
         break;
     }
-
-    route.consumed = true;
   }
 
   // ── Phase Management ─────────────────────────────────────────────

@@ -45,7 +45,6 @@ export class TextTool implements Tool {
 
   private _renderingManager: RenderingManager | null = null;
   private _pendingObjectId: string | null = null;
-  private _pendingPage: number = 1;
 
   /** Set the rendering manager reference (called by the viewer). */
   setRenderingManager(manager: RenderingManager): void {
@@ -139,7 +138,6 @@ export class TextTool implements Tool {
     commandPipeline.execute(cmd);
 
     this._pendingObjectId = newId;
-    this._pendingPage = page;
 
     // Start inline editing immediately
     this._startInlineEdit(newId);
@@ -162,7 +160,7 @@ export class TextTool implements Tool {
     // Allow scrolling while text tool is active
   }
 
-  onKeyDown(event: KeyboardEvent): void {
+  onKeyDown(_event: KeyboardEvent): void {
     // If inline editor is active, it handles its own keys
     if (inlineEditor.isActive) return;
 

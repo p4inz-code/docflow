@@ -10,7 +10,6 @@
  */
 
 import type { CursorStyle } from "./editor";
-import type { EditableObject } from "./objects";
 import type { InteractionEvent } from "./interaction";
 
 // ── Tool Identifiers ───────────────────────────────────────────────

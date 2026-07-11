@@ -84,8 +84,10 @@ Docflow is a **feature-complete PDF editing application** that runs entirely in 
 ## Quick Start
 
 ### Prerequisites
-- **Node.js** >= 18.x
-- **pnpm** >= 8.x
+- **Node.js** >= 22.12.x
+- **pnpm** >= 11.x (or use `corepack enable && corepack install`)
+
+> The project includes a `packageManager` field in `package.json`. If you have [corepack](https://nodejs.org/api/corepack.html) enabled, the correct pnpm version will be selected automatically.
 
 ```bash
 # Clone the repository

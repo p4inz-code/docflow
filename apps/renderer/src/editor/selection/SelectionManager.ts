@@ -16,8 +16,7 @@
  *   - Snapping guides
  */
 
-import type { SelectionState, MarqueeState, HitTestResult } from "../types/selection";
-import type { HandleDirection } from "../types/editor";
+import type { SelectionState, HitTestResult } from "../types/selection";
 import type { EditableObject } from "../types/objects";
 
 // ── Selection Manager ──────────────────────────────────────────────

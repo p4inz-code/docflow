@@ -5,6 +5,7 @@
  */
 
 import Dialog from "./Dialog";
+import { FileText } from "../Icons";
 
 interface AboutDialogProps {
   open: boolean;
@@ -33,14 +34,8 @@ export default function AboutDialog({ open, onClose }: AboutDialogProps) {
     <Dialog open={open} title="About Docflow" onClose={onClose} footer={footer} width={400}>
       <div aria-describedby="about-description">
       <div style={{ textAlign: "center", padding: "16px 0" }}>
-        <div
-          style={{
-            fontSize: 48,
-            marginBottom: 12,
-            opacity: 0.8,
-          }}
-        >
-          📄
+        <div style={{ marginBottom: 12 }}>
+          <FileText size={48} style={{ opacity: 0.8 }} aria-hidden="true" />
         </div>
         <h3
           style={{

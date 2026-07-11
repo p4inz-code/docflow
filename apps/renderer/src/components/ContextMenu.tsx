@@ -25,6 +25,7 @@ interface MenuItem {
   action: () => void;
   disabled?: boolean;
   separator?: boolean;
+  shortcut?: string;
 }
 
 // ── Styles ─────────────────────────────────────────────────────────
@@ -91,9 +92,6 @@ export default function ContextMenu() {
     const items: MenuItem[] = [];
 
     if (hasSelection) {
-      const isText = store.overlayObjects.some(
-        (o) => store.selectedIds.includes(o.id) && o.type === "text",
-      );
       const allLocked = store.selectedIds.every(
         (id) => store.overlayObjects.find((o) => o.id === id)?.locked,
       );
@@ -179,9 +177,15 @@ export default function ContextMenu() {
         close();
       }
     };
-    // Delay so the menu click itself isn't swallowed
-    setTimeout(() => document.addEventListener("click", handleClick), 0);
-    return () => document.removeEventListener("click", handleClick);
+    // Use requestAnimationFrame instead of setTimeout(0) for better
+    // lifecycle management — cleanup fires on next frame if unmounted.
+    const rafId = requestAnimationFrame(() => {
+      document.addEventListener("click", handleClick);
+    });
+    return () => {
+      cancelAnimationFrame(rafId);
+      document.removeEventListener("click", handleClick);
+    };
   }, [menu, close]);
 
   // Close on Escape

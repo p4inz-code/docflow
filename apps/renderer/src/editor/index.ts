@@ -94,14 +94,6 @@ export {
   ZOOM_STEP,
 } from "./core/constants";
 
-export {
-  createRoute,
-} from "./core/EventFlow";
-
-export type {
-  EventRoute,
-} from "./core/EventFlow";
-
 // ── Models ─────────────────────────────────────────────────────────
 export {
   LayerType,
@@ -259,7 +251,6 @@ export type {
   ExportResult,
   DeserializationResult,
   SaveCallbacks,
-  AutosaveCallbacks,
   RecoveryCallbacks,
   RecoveryData,
   RecoverySessionInfo,

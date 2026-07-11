@@ -89,6 +89,9 @@ export class RecentFilesManager {
       }
     } catch {
       this._files = [];
+      if (process.env.NODE_ENV !== "production") {
+        console.warn("[RecentFiles] Failed to load recent files from localStorage");
+      }
     }
   }
 
@@ -96,7 +99,9 @@ export class RecentFilesManager {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(this._files));
     } catch {
-      // localStorage may be full or unavailable
+      if (process.env.NODE_ENV !== "production") {
+        console.warn("[RecentFiles] Failed to save recent files to localStorage");
+      }
     }
   }
 }

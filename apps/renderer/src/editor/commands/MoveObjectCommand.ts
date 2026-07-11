@@ -6,8 +6,8 @@
  * frame of a drag doesn't create a separate history entry.
  */
 
-import { BaseCommand, noopResult } from "./base";
-import type { CommandResult, CommandType } from "../types/commands";
+import { BaseCommand } from "./base";
+import type { Command, CommandResult, CommandType } from "../types/commands";
 import { CommandType as CT } from "../types/commands";
 import type { Point } from "../types/editor";
 import { useEditorStore } from "../state/editorStore";

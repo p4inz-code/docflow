@@ -7,30 +7,31 @@
  * Synchronizes with editor store for active tool state.
  */
 
-import { useCallback, useMemo } from "react";
+import { useCallback } from "react";
 import { useEditorStore } from "../editor/state/editorStore";
 import { ToolType } from "../editor/types/tools";
 import { commandPipeline } from "../editor/core/CommandPipeline";
+import { TOOL_ICONS, Undo2, Redo2, FolderOpen, ZoomIn, ZoomOut } from "./Icons";
 
 // ── Tool definitions ───────────────────────────────────────────────
 interface ToolDef {
   type: ToolType;
   label: string;
-  icon: string;
+  iconComponent: React.ComponentType<{ size?: number; className?: string }>;
   shortcut: string;
 }
 
 const TOOLS: ToolDef[] = [
-  { type: ToolType.Select, label: "Select", icon: "⬚", shortcut: "V" },
-  { type: ToolType.Hand, label: "Hand", icon: "✋", shortcut: "H" },
-  { type: ToolType.Text, label: "Text", icon: "T", shortcut: "T" },
-  { type: ToolType.Image, label: "Image", icon: "🖼", shortcut: "I" },
-  { type: ToolType.Shape, label: "Shape", icon: "◇", shortcut: "R" },
-  { type: ToolType.Draw, label: "Draw", icon: "✏", shortcut: "D" },
-  { type: ToolType.Highlight, label: "Highlight", icon: "⬟", shortcut: "U" },
-  { type: ToolType.Signature, label: "Signature", icon: "✍", shortcut: "S" },
-  { type: ToolType.Stamp, label: "Stamp", icon: "◎", shortcut: "P" },
-  { type: ToolType.Erase, label: "Erase", icon: "🗑", shortcut: "E" },
+  { type: ToolType.Select, label: "Select", iconComponent: TOOL_ICONS.select, shortcut: "V" },
+  { type: ToolType.Hand, label: "Hand", iconComponent: TOOL_ICONS.hand, shortcut: "H" },
+  { type: ToolType.Text, label: "Text", iconComponent: TOOL_ICONS.text, shortcut: "T" },
+  { type: ToolType.Image, label: "Image", iconComponent: TOOL_ICONS.image, shortcut: "I" },
+  { type: ToolType.Shape, label: "Shape", iconComponent: TOOL_ICONS.shape, shortcut: "R" },
+  { type: ToolType.Draw, label: "Draw", iconComponent: TOOL_ICONS.draw, shortcut: "D" },
+  { type: ToolType.Highlight, label: "Highlight", iconComponent: TOOL_ICONS.highlight, shortcut: "U" },
+  { type: ToolType.Signature, label: "Signature", iconComponent: TOOL_ICONS.signature, shortcut: "S" },
+  { type: ToolType.Stamp, label: "Stamp", iconComponent: TOOL_ICONS.stamp, shortcut: "P" },
+  { type: ToolType.Erase, label: "Erase", iconComponent: TOOL_ICONS.erase, shortcut: "E" },
 ];
 
 // ── Styles ─────────────────────────────────────────────────────────
@@ -112,6 +113,7 @@ interface ToolbarProps {
   onFitWidth: () => void;
   onFitPage: () => void;
   onOpenFile: () => void;
+  disabled?: boolean;
 }
 
 export default function Toolbar({
@@ -121,16 +123,15 @@ export default function Toolbar({
   onFitWidth,
   onFitPage,
   onOpenFile,
+  disabled = false,
 }: ToolbarProps) {
   const activeTool = useEditorStore((s) => s.activeTool);
   const isDirty = useEditorStore((s) => s.isDirty);
   const fileName = useEditorStore((s) => s.fileName);
-  const historyVersion = useEditorStore((s) => s.historyVersion);
   const setActiveTool = useEditorStore((s) => s.setActiveTool);
 
-  // Reactive undo/redo state (updates when historyVersion changes)
-  const canUndo = useMemo(() => commandPipeline.canUndo, [historyVersion]);
-  const canRedo = useMemo(() => commandPipeline.canRedo, [historyVersion]);
+  // Subscribe to history version changes so undo/redo buttons update
+  useEditorStore((s) => s.historyVersion);
 
   const handleToolClick = useCallback(
     (type: ToolType) => {
@@ -140,7 +141,15 @@ export default function Toolbar({
   );
 
   return (
-    <div style={styles.bar} role="toolbar" aria-label="Editor toolbar">
+    <div
+      style={{
+        ...styles.bar,
+        opacity: disabled ? 0.65 : 1,
+      }}
+      role="toolbar"
+      aria-label={disabled ? "Editor toolbar (no document)" : "Editor toolbar"}
+      aria-disabled={disabled}
+    >
       {/* ── Document actions ── */}
       <div style={styles.group} role="group" aria-label="Document">
         <button
@@ -149,7 +158,7 @@ export default function Toolbar({
           title="Open PDF (Ctrl+O)"
           aria-label="Open PDF"
         >
-          📂
+          <FolderOpen size={16} aria-hidden="true" />
         </button>
         <span style={{ color: "#666", fontSize: 11, marginLeft: 4, whiteSpace: "nowrap" }}>
           {fileName ?? "Untitled"}{isDirty ? " •" : ""}
@@ -164,25 +173,25 @@ export default function Toolbar({
           onClick={() => commandPipeline.undo()}
           style={{
             ...styles.actionBtn,
-            opacity: commandPipeline.canUndo ? 1 : 0.3,
+            opacity: disabled ? 0.2 : commandPipeline.canUndo ? 1 : 0.3,
           }}
-          disabled={!commandPipeline.canUndo}
+          disabled={disabled || !commandPipeline.canUndo}
           title="Undo (Ctrl+Z)"
           aria-label="Undo"
         >
-          ↩
+          <Undo2 size={14} aria-hidden="true" />
         </button>
         <button
           onClick={() => commandPipeline.redo()}
           style={{
             ...styles.actionBtn,
-            opacity: commandPipeline.canRedo ? 1 : 0.3,
+            opacity: disabled ? 0.2 : commandPipeline.canRedo ? 1 : 0.3,
           }}
-          disabled={!commandPipeline.canRedo}
+          disabled={disabled || !commandPipeline.canRedo}
           title="Redo (Ctrl+Y)"
           aria-label="Redo"
         >
-          ↪
+          <Redo2 size={14} aria-hidden="true" />
         </button>
       </div>
 
@@ -194,12 +203,17 @@ export default function Toolbar({
           <button
             key={tool.type}
             onClick={() => handleToolClick(tool.type)}
-            style={styles.toolBtn(activeTool === tool.type)}
-            title={`${tool.label} (${tool.shortcut})`}
+            style={{
+              ...styles.toolBtn(activeTool === tool.type),
+              opacity: disabled ? 0.4 : activeTool === tool.type ? 1 : 0.85,
+              cursor: disabled ? "default" : "pointer",
+            }}
+            disabled={disabled}
+            title={disabled ? "Open a document to use tools" : `${tool.label} (${tool.shortcut})`}
             aria-label={`${tool.label} tool`}
-            aria-pressed={activeTool === tool.type}
+            aria-pressed={!disabled && activeTool === tool.type}
           >
-            {tool.icon}
+            <tool.iconComponent size={16} aria-hidden="true" />
             <span style={styles.shortcut}>{tool.shortcut}</span>
           </button>
         ))}
@@ -209,12 +223,26 @@ export default function Toolbar({
 
       {/* ── Zoom controls ── */}
       <div style={styles.group} role="group" aria-label="Zoom">
-        <button onClick={onZoomOut} style={styles.actionBtn} title="Zoom out" aria-label="Zoom out">
-          −
+        <button
+          onClick={onZoomOut}
+          style={{ ...styles.actionBtn, opacity: disabled ? 0.2 : 1 }}
+          disabled={disabled}
+          title={disabled ? "Open a document to zoom" : "Zoom out"}
+          aria-label="Zoom out"
+        >
+          <ZoomOut size={14} aria-hidden="true" />
         </button>
-        <span style={styles.zoomLabel} aria-live="polite" aria-atomic="true">{Math.round(zoomLevel * 100)}%</span>
-        <button onClick={onZoomIn} style={styles.actionBtn} title="Zoom in" aria-label="Zoom in">
-          +
+        <span style={{ ...styles.zoomLabel, opacity: disabled ? 0.4 : 1 }} aria-live="polite" aria-atomic="true">
+          {Math.round(zoomLevel * 100)}%
+        </span>
+        <button
+          onClick={onZoomIn}
+          style={{ ...styles.actionBtn, opacity: disabled ? 0.2 : 1 }}
+          disabled={disabled}
+          title={disabled ? "Open a document to zoom" : "Zoom in"}
+          aria-label="Zoom in"
+        >
+          <ZoomIn size={14} aria-hidden="true" />
         </button>
       </div>
 
@@ -223,16 +251,18 @@ export default function Toolbar({
       <div style={styles.group} role="group" aria-label="View modes">
         <button
           onClick={onFitWidth}
-          style={{ ...styles.actionBtn, fontSize: 11, width: "auto", padding: "0 8px" }}
-          title="Fit width"
+          style={{ ...styles.actionBtn, fontSize: 11, width: "auto", padding: "0 8px", opacity: disabled ? 0.2 : 1 }}
+          disabled={disabled}
+          title={disabled ? "Open a document to change view" : "Fit width"}
           aria-label="Fit to width"
         >
           Fit W
         </button>
         <button
           onClick={onFitPage}
-          style={{ ...styles.actionBtn, fontSize: 11, width: "auto", padding: "0 8px" }}
-          title="Fit page"
+          style={{ ...styles.actionBtn, fontSize: 11, width: "auto", padding: "0 8px", opacity: disabled ? 0.2 : 1 }}
+          disabled={disabled}
+          title={disabled ? "Open a document to change view" : "Fit page"}
           aria-label="Fit to page"
         >
           Fit P

@@ -138,18 +138,16 @@ export class KeyboardShortcuts {
     // Workspace shortcuts
     if (isMod && e.key === "w") {
       e.preventDefault();
-      // Close current tab
-      const store = useEditorStore.getState();
-      store.reset();
+      // Close current tab - handled by App.tsx keyboard handler
     }
     if (isMod && !e.shiftKey && e.key === "n") {
       e.preventDefault();
-      // New document - trigger file input
-      document.querySelector<HTMLInputElement>("#pdf-file-input")?.click();
+      // New document
+      // Future: create blank document
     }
     if (isMod && e.shiftKey && e.key === "s") {
       e.preventDefault();
-      // Save As - future
+      // Save As - handled by App.tsx
     }
   };
 

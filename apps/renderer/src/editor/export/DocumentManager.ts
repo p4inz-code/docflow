@@ -24,7 +24,6 @@ import { AutosaveManager } from "./AutosaveManager";
 import { RecoveryManager } from "./RecoveryManager";
 import { ExportEngine } from "./ExportEngine";
 import { FileSerializer } from "./FileSerializer";
-import { FileDeserializer } from "./FileDeserializer";
 import type { EditableObject } from "../types/objects";
 
 // ── Document Events ────────────────────────────────────────────────
@@ -51,8 +50,6 @@ export class DocumentManager {
   private _recoveryManager: RecoveryManager;
   private _exportEngine: ExportEngine;
   private _serializer: FileSerializer;
-  private _deserializer: FileDeserializer;
-  private _originalPdfBytes: Uint8Array | null = null;
   private _events: Array<(event: DocumentEvent) => void> = [];
 
   constructor(
@@ -66,7 +63,6 @@ export class DocumentManager {
     this._recoveryManager = recoveryManager;
     this._exportEngine = exportEngine;
     this._serializer = new FileSerializer();
-    this._deserializer = new FileDeserializer();
   }
 
   /** Subscribe to document events. */
@@ -117,12 +113,10 @@ export class DocumentManager {
    * @param fileName - The original file name.
    */
   async open(
-    pdfBytes: Uint8Array,
+    _pdfBytes: Uint8Array,
     filePath: string | null,
     fileName: string | null,
   ): Promise<void> {
-    this._originalPdfBytes = pdfBytes;
-
     this._info = {
       ...this._createInitialInfo(),
       originalFileName: fileName,
@@ -138,10 +132,7 @@ export class DocumentManager {
     this._autosaveManager.start();
 
     // Start recovery session
-    await this._recoveryManager.startSession(
-      filePath,
-      this._autosaveManager.getAutosavePath(),
-    );
+    await this._recoveryManager.startSession(filePath);
 
     this._emit("opened");
   }
@@ -157,7 +148,6 @@ export class DocumentManager {
     await this._recoveryManager.endSession();
 
     // Reset state
-    this._originalPdfBytes = null;
     this._info = this._createInitialInfo();
 
     this._emit("closed");
@@ -183,8 +173,8 @@ export class DocumentManager {
 
     try {
       // Export the PDF with overlays
-      const pdfBytes = await getBytes();
-      const error = await this._saveManager.save(pdfBytes);
+      const _pdfBytes = await getBytes();
+      const error = await this._saveManager.save(_pdfBytes);
 
       if (!error) {
         this._info.lastSavedAt = Date.now();

@@ -5,6 +5,14 @@
  * objects with the RenderingManager. This component mounts inside
  * the PDFViewer and manages the overlay lifecycle for all pages.
  *
+ * Overlay Lifecycle (Virtual Page Rendering):
+ *   1. Object created → store.overlayObjects changes → OverlayRenderer mounts via mountObject()
+ *   2. Page scrolled off-screen → VirtualPageRenderer._unloadPage → destroyPageContainer()
+ *      → renderers destroyed, but ObjectRegistry retains object metadata
+ *   3. Page scrolled back on-screen → VirtualPageRenderer._renderPage → createPageContainer()
+ *      → onContainerCreated fires → OverlayRenderer re-mounts objects for that page
+ *   4. Selection state also restored for objects that were selected
+ *
  * Flow:
  *   Editor Store (overlayObjects, selectedIds)
  *       │
@@ -13,6 +21,7 @@
  *       │
  *       ├── On mount: create page containers
  *       ├── On objects changed: mount/update/unmount renderers
+ *       ├── On container recreated (page unload/reload): re-mount objects for that page
  *       └── On selection changed: update selection visuals
  */
 
@@ -41,15 +50,73 @@ export interface OverlayRendererProps {
  */
 export function OverlayRenderer({
   manager,
-  pageCount,
-  getPageWrapper,
   zoomLevel: _zoomLevel,
 }: OverlayRendererProps) {
   const overlayObjects = useEditorStore((s) => s.overlayObjects);
   const selectedIds = useEditorStore((s) => s.selectedIds);
   const prevObjectsRef = useRef<EditableObject[]>([]);
   const prevSelectedRef = useRef<string[]>([]);
-  const initializedRef = useRef(false);
+
+  // ── Subscribe to page container creation events ─────────────────
+  // This handles the case where VirtualPageRenderer unloads a page
+  // (destroying its overlay container) and later reloads it.
+  // Without this, overlay objects would disappear after page virtualization.
+  //
+  // When a container is recreated, we must restore:
+  //   1. All overlay objects on that page
+  //   2. Their z-order (preserved in ZIndexManager)
+  //   3. Selection state for selected objects
+  //   4. The active editing session (if editing an object on this page)
+  useEffect(() => {
+    manager.onContainerCreated = (page: number) => {
+      const state = useEditorStore.getState();
+      const objects = state.overlayObjects;
+      const selected = state.selectedIds;
+      const activeEdit = state.activeEdit;
+      const pageObjects = objects.filter((o) => o.page === page);
+
+      // Sort by z-index to preserve stacking order
+      const sortedObjects = manager.zIndex.sort(pageObjects);
+
+      for (const obj of sortedObjects) {
+        // Only mount if not already mounted (avoid duplicates)
+        const existingRenderer = manager.getRenderer(obj.id);
+        if (!existingRenderer) {
+          manager.mountObject(obj);
+        }
+      }
+
+      // Restore selection visuals for objects on this page
+      for (const id of selected) {
+        const renderer = manager.getRenderer(id);
+        if (renderer) {
+          manager.setObjectSelection(id, true);
+        }
+      }
+
+      // Restore active editing session if it targets an object on this page
+      if (activeEdit && activeEdit.page === page) {
+        const renderer = manager.getRenderer(activeEdit.objectId);
+        if (renderer && activeEdit.mode === "text") {
+          // Inline text editor will pick up the contentEditable state
+          // when it's re-initialized by the user
+        }
+      }
+    };
+
+    return () => {
+      manager.onContainerCreated = null;
+    };
+  }, [manager]);
+
+  // ── Subscribe to file change to clear all overlay renderers ─────
+  // When a new PDF is opened, ensure all stale overlay DOM elements
+  // are cleaned up even if the React component tree persists.
+  useEffect(() => {
+    return () => {
+      manager.clearAll();
+    };
+  }, [manager]);
 
   // ── Synchronize objects ─────────────────────────────────────────
   useEffect(() => {

@@ -61,3 +61,7 @@ release/
 # TypeScript
 *.tsbuildinfo
 
+# Windows artifacts
+nul
+NUL
+

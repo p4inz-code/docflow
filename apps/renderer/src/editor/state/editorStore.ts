@@ -16,7 +16,7 @@ import type { ToolType } from "../types/tools";
 import { ToolType as ToolTypeConst } from "../types/tools";
 import type { InteractionPhase } from "../types/editor";
 import type { SelectionState } from "../types/selection";
-import type { EditableObject } from "../types/objects";
+import type { EditableObject, EditableObjectBase } from "../types/objects";
 import type { HistoryState } from "../types/history";
 import type { EditingMode, ActiveEdit } from "../types/editing";
 
@@ -121,7 +121,7 @@ export interface EditorActions {
   setOverlayObjects: (objects: EditableObject[]) => void;
   addOverlayObject: (object: EditableObject) => void;
   removeOverlayObject: (id: string) => void;
-  updateOverlayObject: (id: string, changes: Partial<EditableObject>) => void;
+  updateOverlayObject: (id: string, changes: Partial<EditableObjectBase> & Record<string, unknown>) => void;
   /** Set the current editing mode. */
   setEditingMode: (mode: EditingMode) => void;
   /** Set the active editing session. */

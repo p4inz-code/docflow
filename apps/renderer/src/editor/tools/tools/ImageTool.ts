@@ -121,7 +121,7 @@ export class ImageTool implements Tool {
     input.accept = ACCEPTED_TYPES;
     input.style.display = "none";
 
-    input.addEventListener("change", () => {
+    const changeHandler = () => {
       const file = input.files?.[0];
       if (!file) {
         input.remove();
@@ -138,10 +138,31 @@ export class ImageTool implements Tool {
         input.remove();
       };
       reader.readAsDataURL(file);
-    });
+    };
+    input.addEventListener("change", changeHandler, { once: true });
 
     document.body.appendChild(input);
     input.click();
+
+    // Clean up the input element if it's not removed by the change handler
+    // (e.g., user cancels the file dialog)
+    const cleanupTimer = setTimeout(() => {
+      if (input.parentNode) {
+        input.remove();
+      }
+    }, 5000);
+
+    // Store cleanup timer on the input for cleanup
+    (input as any)._cleanupTimer = cleanupTimer;
+
+    // Also clean up on blur (dialog closed without selection)
+    const blurHandler = () => {
+      if (cleanupTimer) clearTimeout(cleanupTimer);
+      if (input.parentNode) {
+        input.remove();
+      }
+    };
+    window.addEventListener("focus", blurHandler, { once: true });
   }
 
   private _createImage(
@@ -152,7 +173,6 @@ export class ImageTool implements Tool {
     width: number,
     height: number,
   ): void {
-    const store = useEditorStore.getState();
     const now = Date.now();
     const newId = `img_${generateId()}`;
 

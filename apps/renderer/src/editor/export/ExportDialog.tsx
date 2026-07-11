@@ -9,8 +9,6 @@
 import { useState, useCallback } from "react";
 import Dialog from "../../components/dialogs/Dialog";
 import { useWorkspaceStore } from "../workspace/WorkspaceStore";
-import { ExportSettingsManager } from "./ExportSettings";
-
 // ── Export Format ──────────────────────────────────────────────────
 type ExportFormat = "pdf" | "png" | "jpeg";
 type ExportRange = "all" | "current" | "pages";
@@ -32,8 +30,6 @@ export interface ExportOptions {
   preserveMetadata: boolean;
   optimizeSize: boolean;
 }
-
-const exportSettings = new ExportSettingsManager();
 
 export default function ExportDialog({
   open,

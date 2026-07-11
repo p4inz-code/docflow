@@ -16,21 +16,26 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import type { PDFDocumentProxy } from "pdfjs-dist";
-
+import { useEditorStore } from "../editor/state/editorStore";
+import { LRUCache } from "../editor/rendering/LRUCache";
 
 interface LazyThumbnailsProps {
   pdf: PDFDocumentProxy;
-  activePage: number;
   onPageClick: (pageNumber: number) => void;
 }
 
 const THUMB_BUFFER = 3; // Pre-render N thumbnails above/below viewport
 const THUMB_WIDTH = 140;
 
-export default function LazyThumbnails({ pdf, activePage, onPageClick }: LazyThumbnailsProps) {
+export default function LazyThumbnails({ pdf, onPageClick }: LazyThumbnailsProps) {
+  // Read active page from the central store (single source of truth)
+  const storeActivePage = useEditorStore((s) => s.activePage);
   const containerRef = useRef<HTMLDivElement>(null);
   const [visibleRange, setVisibleRange] = useState({ start: 1, end: 10 });
-  const thumbCache = useRef<Map<number, string>>(new Map());
+  // Bounded LRU cache prevents unbounded memory growth on large documents
+  const thumbCache = useRef<LRUCache<number, string>>(
+    new LRUCache<number, string>(200), // Max 200 thumbnails cached
+  );
   const [contextMenu, setContextMenu] = useState<{
     pageNum: number;
     x: number;
@@ -88,12 +93,15 @@ export default function LazyThumbnails({ pdf, activePage, onPageClick }: LazyThu
           const ctx = offCanvas.getContext("2d");
           if (!ctx) continue;
 
-          await page.render({ canvasContext: ctx, viewport }).promise;
+          await page.render({ canvasContext: ctx, viewport } as any).promise;
 
-          // Store as data URL in cache
+          // Store as data URL in cache (LRU eviction prevents unbounded growth)
           thumbCache.current.set(i, offCanvas.toDataURL());
         } catch {
-          // Skip failed thumbnails
+          // Skip failed thumbnails — rendering errors are non-fatal
+          if (process.env.NODE_ENV !== "production") {
+            console.warn("[Thumbnails] Failed to render thumbnail for page:", i);
+          }
         }
       }
     })();
@@ -216,7 +224,7 @@ export default function LazyThumbnails({ pdf, activePage, onPageClick }: LazyThu
       <div style={{ padding: "8px" }}>
         {Array.from({ length: pdf.numPages }, (_, i) => i + 1).map((pageNum) => {
           const isVisible = pageNum >= visibleRange.start && pageNum <= visibleRange.end;
-          const cachedDataUrl = thumbCache.current.get(pageNum);
+          const cachedDataUrl = thumbCache.current.get(pageNum) ?? null;
 
           return (
             <button
@@ -231,9 +239,9 @@ export default function LazyThumbnails({ pdf, activePage, onPageClick }: LazyThu
                 width: "100%",
                 padding: "6px",
                 marginBottom: "8px",
-                background: activePage === pageNum ? "#2a2a2a" : "transparent",
+                background: storeActivePage === pageNum ? "#2a2a2a" : "transparent",
                 border:
-                  activePage === pageNum
+                  storeActivePage === pageNum
                     ? "1px solid #555"
                     : "1px solid transparent",
                 borderRadius: 4,
@@ -290,7 +298,7 @@ export default function LazyThumbnails({ pdf, activePage, onPageClick }: LazyThu
               )}
               <span
                 style={{
-                  color: activePage === pageNum ? "#ccc" : "#666",
+                  color: storeActivePage === pageNum ? "#ccc" : "#666",
                   fontSize: 11,
                   marginTop: 4,
                   display: "block",

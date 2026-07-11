@@ -14,6 +14,7 @@
  */
 
 import { Component, type ErrorInfo, type ReactNode } from "react";
+import { AlertTriangle } from "./Icons";
 
 // ── Props ──────────────────────────────────────────────────────────
 interface ErrorBoundaryProps {
@@ -76,7 +77,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
             minHeight: 200,
           }}
         >
-          <span style={{ fontSize: 48, opacity: 0.5 }}>⚠</span>
+          <AlertTriangle size={48} style={{ opacity: 0.5 }} aria-hidden="true" />
           <div style={{ color: "#ccc", fontSize: 16, fontWeight: 600 }}>
             Something went wrong
           </div>

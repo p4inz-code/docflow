@@ -19,7 +19,7 @@
  * so that layered objects render correctly in the output PDF.
  */
 
-import { type PDFPage, rgb, type PDFFont } from "pdf-lib";
+import { type PDFPage, type PDFFont } from "pdf-lib";
 import type { EditableObject, TextObject } from "../types/objects";
 import type { ExportError } from "./types";
 import { ExportErrorCategory, createExportError } from "./types";
@@ -50,8 +50,8 @@ export class OverlayFlattener {
     page: PDFPage,
     objects: EditableObject[],
     pageIndex: number,
-    pageWidth: number,
-    pageHeight: number,
+    _pageWidth: number,
+    _pageHeight: number,
   ): Promise<ExportError[]> {
     const errors: ExportError[] = [];
 
@@ -62,7 +62,7 @@ export class OverlayFlattener {
 
     for (const obj of pageObjects) {
       try {
-        await this._flattenObject(page, obj, pageWidth, pageHeight);
+        await this._flattenObject(page, obj, _pageWidth, _pageHeight);
       } catch (err) {
         errors.push(
           createExportError(
@@ -81,7 +81,7 @@ export class OverlayFlattener {
   private async _flattenObject(
     page: PDFPage,
     obj: EditableObject,
-    pageWidth: number,
+    _pageWidth: number,
     pageHeight: number,
   ): Promise<void> {
     // Convert from page-space (y-down) to PDF coordinates (y-up)
@@ -89,24 +89,9 @@ export class OverlayFlattener {
     const y = pageHeight - obj.position.y - obj.size.height;
     const w = obj.size.width;
     const h = obj.size.height;
-    const opacity = obj.opacity;
-    // Apply opacity at the page level for this object
-    if (opacity < 1) {
-      page.setOpacity(opacity);
-    }
-
-    // Note: Rotation is preserved as a V1 best-effort feature.
-    // pdf-lib's vector drawing methods don't natively support rotation transforms.
-    // Objects with non-zero rotation will export at 0° rotation.
-    // Full rotation support requires manual coordinate transformation or custom
-    // PDF content stream operators.
-
     switch (obj.type) {
       case "text":
         await this._flattenText(page, obj as TextObject, x, y, w, h);
-        break;
-      case "whiteout":
-        this._flattenWhiteout(page, obj, x, y, w, h);
         break;
       case "highlight":
         this._flattenHighlight(page, obj, x, y, w, h);
@@ -126,11 +111,6 @@ export class OverlayFlattener {
       case "stamp":
         this._flattenStamp(page, obj, x, y, w, h);
         break;
-    }
-
-    // Reset opacity after each object to prevent bleed-through
-    if (opacity < 1) {
-      page.setOpacity(1);
     }
   }
 
@@ -153,19 +133,8 @@ export class OverlayFlattener {
     );
 
     const fontSize = data.fontSize ?? 16;
-    const color = this._parseColor(data.color ?? "#000000");
     const textAlign = data.textAlign ?? "left";
     const lineHeight = this._fontManager.getLineHeight(fontSize, data.lineHeight ?? 1.4);
-
-    // Calculate text width and handle alignment
-    const textWidth = font.widthOfTextAtSize(content, fontSize);
-
-    let textX = x;
-    if (textAlign === "center") {
-      textX = x + (w - textWidth) / 2;
-    } else if (textAlign === "right") {
-      textX = x + w - textWidth;
-    }
 
     // Draw text with line breaking
     const maxWidth = w;
@@ -188,30 +157,11 @@ export class OverlayFlattener {
         y: textY,
         size: fontSize,
         font,
-        color,
         maxWidth,
       });
 
       textY -= lineHeight;
     }
-  }
-
-  private _flattenWhiteout(
-    page: PDFPage,
-    obj: EditableObject,
-    x: number,
-    y: number,
-    w: number,
-    h: number,
-  ): void {
-    page.drawRectangle({
-      x,
-      y,
-      width: w,
-      height: h,
-      color: rgb(1, 1, 1), // White
-      borderWidth: 0,
-    });
   }
 
   private _flattenHighlight(
@@ -223,19 +173,16 @@ export class OverlayFlattener {
     h: number,
   ): void {
     const data = obj.data as Record<string, unknown>;
-    const color = this._parseColor((data.color as string) ?? "rgba(255, 255, 0, 0.3)");
     const opacity = (data.opacity as number) ?? 0.3;
 
-    page.setOpacity(opacity);
     page.drawRectangle({
       x,
       y,
       width: w,
       height: h,
-      color,
       borderWidth: 0,
+      opacity,
     });
-    page.setOpacity(1);
   }
 
   private _flattenShape(
@@ -248,10 +195,7 @@ export class OverlayFlattener {
   ): void {
     const data = obj.data as Record<string, unknown>;
     const shapeType = (data.shapeType as string) ?? "rectangle";
-    const fillColor = this._parseOptionalColor(data.fillColor as string);
-    const strokeColor = this._parseOptionalColor(data.strokeColor as string);
     const strokeWidth = (data.strokeWidth as number) ?? 2;
-    const cornerRadius = (data.cornerRadius as number) ?? 0;
 
     switch (shapeType) {
       case "ellipse":
@@ -260,58 +204,26 @@ export class OverlayFlattener {
           y: y + h / 2,
           xScale: w / 2,
           yScale: h / 2,
-          color: fillColor ?? undefined,
-          borderColor: strokeColor ?? undefined,
-          borderWidth: strokeColor ? strokeWidth : 0,
+          borderWidth: strokeWidth,
         });
         break;
 
       case "line":
-        if (strokeColor) {
-          page.drawLine({
-            start: { x, y: y + h },
-            end: { x: x + w, y },
-            color: strokeColor,
-            thickness: strokeWidth,
-          });
-        }
+        page.drawLine({
+          start: { x, y: y + h },
+          end: { x: x + w, y },
+          thickness: strokeWidth,
+        });
         break;
-
-      case "arrow": {
-        if (strokeColor) {
-          page.drawLine({
-            start: { x, y: y + h },
-            end: { x: x + w, y },
-            color: strokeColor,
-            thickness: strokeWidth,
-          });
-        }
-        break;
-      }
 
       default:
-        // Rectangle
-        if (cornerRadius > 0) {
-          page.drawRectangle({
-            x,
-            y,
-            width: w,
-            height: h,
-            color: fillColor ?? undefined,
-            borderColor: strokeColor ?? undefined,
-            borderWidth: strokeColor ? strokeWidth : 0,
-          });
-        } else {
-          page.drawRectangle({
-            x,
-            y,
-            width: w,
-            height: h,
-            color: fillColor ?? undefined,
-            borderColor: strokeColor ?? undefined,
-            borderWidth: strokeColor ? strokeWidth : 0,
-          });
-        }
+        page.drawRectangle({
+          x,
+          y,
+          width: w,
+          height: h,
+          borderWidth: strokeWidth,
+        });
         break;
     }
   }
@@ -326,23 +238,20 @@ export class OverlayFlattener {
   ): void {
     const data = obj.data as Record<string, unknown>;
     const path = data.path as string;
-    const strokeColor = this._parseOptionalColor(data.strokeColor as string);
     const strokeWidth = (data.strokeWidth as number) ?? 2;
 
-    if (!path || !strokeColor) return;
+    if (!path) return;
 
     // Parse SVG path and draw approximate lines
-    // For simple paths, draw a line from start to end
     const commands = path.match(/[ML]\s*[\d.-]+\s*[\d.-]+/g);
     if (commands && commands.length >= 2) {
       for (let i = 0; i < commands.length - 1; i++) {
-        const [_, x1, y1] = commands[i].match(/([ML])\s*([\d.-]+)\s*([\d.-]+)/) ?? [];
-        const [__, _cmd, x2, y2] = commands[i + 1].match(/([ML])\s*([\d.-]+)\s*([\d.-]+)/) ?? [];
+        const [, x1, y1] = commands[i].match(/([ML])\s*([\d.-]+)\s*([\d.-]+)/) ?? [];
+        const [, , x2, y2] = commands[i + 1].match(/([ML])\s*([\d.-]+)\s*([\d.-]+)/) ?? [];
         if (x1 && y1 && x2 && y2) {
           page.drawLine({
             start: { x: x + parseFloat(x1), y: y - parseFloat(y1) },
             end: { x: x + parseFloat(x2), y: y - parseFloat(y2) },
-            color: strokeColor,
             thickness: strokeWidth,
           });
         }
@@ -408,7 +317,6 @@ export class OverlayFlattener {
   ): void {
     const data = obj.data as Record<string, unknown>;
     const text = (data.text as string) ?? (data.presetName as string) ?? "STAMP";
-    const color = this._parseColor((data.color as string) ?? "#ff0000");
 
     // Draw coloured border
     page.drawRectangle({
@@ -416,9 +324,7 @@ export class OverlayFlattener {
       y,
       width: w,
       height: h,
-      borderColor: color,
       borderWidth: 3,
-      color: rgb(1, 1, 1),
     });
 
     // Draw stamp text (using Helvetica Bold)
@@ -427,41 +333,10 @@ export class OverlayFlattener {
       x: x + 8,
       y: y + h / 2 - fontSize / 2,
       size: fontSize,
-      color,
     });
   }
 
   // ── Helpers ──────────────────────────────────────────────────────
-  private _parseColor(colorStr: string): { r: number; g: number; b: number } {
-    // Handle hex colors
-    if (colorStr.startsWith("#")) {
-      const hex = colorStr.replace("#", "");
-      const r = parseInt(hex.substring(0, 2), 16) / 255;
-      const g = parseInt(hex.substring(2, 4), 16) / 255;
-      const b = parseInt(hex.substring(4, 6), 16) / 255;
-      return { r: isNaN(r) ? 0 : r, g: isNaN(g) ? 0 : g, b: isNaN(b) ? 0 : b };
-    }
-
-    // Handle rgba colors — extract the RGB values
-    if (colorStr.startsWith("rgba") || colorStr.startsWith("rgb")) {
-      const matches = colorStr.match(/[\d.]+/g);
-      if (matches && matches.length >= 3) {
-        return {
-          r: parseFloat(matches[0]) / 255,
-          g: parseFloat(matches[1]) / 255,
-          b: parseFloat(matches[2]) / 255,
-        };
-      }
-    }
-
-    return { r: 0, g: 0, b: 0 };
-  }
-
-  private _parseOptionalColor(colorStr: string | undefined): { r: number; g: number; b: number } | null {
-    if (!colorStr || colorStr === "transparent" || colorStr === "none") return null;
-    return this._parseColor(colorStr);
-  }
-
   private _wrapText(
     text: string,
     font: PDFFont,
@@ -491,4 +366,3 @@ export class OverlayFlattener {
     return lines.length > 0 ? lines : [text];
   }
 }
-

@@ -35,9 +35,9 @@ export class TextRenderer implements ObjectRenderer {
     this.element.style.whiteSpace = "pre-wrap";
     this.element.style.boxSizing = "border-box";
     this.element.style.borderRadius = "2px";
-    this.element.style.fontSmooth = "antialiased";
-    this.element.style.webkitFontSmoothing = "antialiased";
-    this.element.style.MozOsxFontSmoothing = "grayscale";
+    (this.element.style as unknown as Record<string, string>)["fontSmooth"] = "antialiased";
+    (this.element.style as unknown as Record<string, string>)["webkitFontSmoothing"] = "antialiased";
+    (this.element.style as unknown as Record<string, string>)["MozOsxFontSmoothing"] = "grayscale";
     this.element.style.transition = "box-shadow 0.15s ease";
     this.render();
   }

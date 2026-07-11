@@ -5,7 +5,7 @@
  * used by selection marquees, hit-testing, and bounding-box calculations.
  */
 
-import type { Point, Rect, Size } from "../types/editor";
+import type { Point, Rect } from "../types/editor";
 
 /** Create a Rect from position and size. */
 export function createRect(x: number, y: number, width: number, height: number): Rect {

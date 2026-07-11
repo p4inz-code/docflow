@@ -10,9 +10,17 @@
  *   2. If found → generates recovery data for the UI to present
  *   3. User chooses to recover or discard
  *   4. Recovered documents are restored; stale sessions are cleaned up
+ *
+ * Integration:
+ *   - Sessions are started when documents are opened
+ *   - Sessions are ended when documents are closed
+ *   - Autosave timestamps are updated after each autosave
+ *   - On app startup, stale sessions are detected and presented
  */
 
 import type { RecoverySession } from "./types";
+import type { SavePipeline } from "./SavePipeline";
+import { workspaceErrorHandler } from "../core/ErrorManager";
 
 // ── Recovery Callbacks ─────────────────────────────────────────────
 export interface RecoveryCallbacks {
@@ -47,30 +55,44 @@ export interface RecoverySessionInfo {
 export class RecoveryManager {
   private _callbacks: RecoveryCallbacks | null = null;
   private _currentSession: RecoverySession | null = null;
-  private readonly SESSION_FILE = "session.json";
+  private _sessionMap = new Map<string, RecoverySession>();
 
-  /** Register recovery callbacks. */
+  /**
+   * Register recovery callbacks (file I/O operations).
+   * Must be called before any session operations.
+   */
   setCallbacks(callbacks: RecoveryCallbacks): void {
     this._callbacks = callbacks;
   }
 
   /**
+   * Register the save pipeline for performing recovery saves.
+   */
+  setSavePipeline(_pipeline: SavePipeline): void {
+    // Pipeline is accepted for future use with file-based recovery
+  }
+
+  /**
    * Start a new recovery session when a document is opened.
    * Call this after opening a PDF file.
+   *
+   * In browser context, sessions are tracked in-memory and serialized
+   * to localStorage. In Electron, they'd use the real filesystem.
    */
   async startSession(
     originalFilePath: string | null,
-    autosavePath: string | null,
+    sessionId?: string,
   ): Promise<RecoverySession> {
     const session: RecoverySession = {
-      sessionId: crypto.randomUUID(),
+      sessionId: sessionId ?? crypto.randomUUID(),
       startedAt: Date.now(),
       lastAutosaveAt: Date.now(),
       originalFilePath,
-      autosavePath,
+      autosavePath: null,
     };
 
     this._currentSession = session;
+    this._sessionMap.set(session.sessionId, session);
     await this._persistSession(session);
     return session;
   }
@@ -84,18 +106,35 @@ export class RecoveryManager {
 
   /**
    * End the current recovery session (on successful save or document close).
-   * Cleans up recovery session data.
+   * Cleans up recovery session data from storage.
    */
   async endSession(): Promise<void> {
     if (!this._currentSession) return;
-
     await this._cleanupSession(this._currentSession.sessionId);
+    this._sessionMap.delete(this._currentSession.sessionId);
+    this._currentSession = null;
+  }
+
+  /**
+   * End all active recovery sessions (on workspace close / app shutdown).
+   */
+  async endAllSessions(): Promise<void> {
+    for (const [sessionId] of this._sessionMap) {
+      await this._cleanupSession(sessionId);
+    }
+    this._sessionMap.clear();
     this._currentSession = null;
   }
 
   /**
    * Check for stale recovery sessions (from previous launches).
    * Call this on application startup.
+   *
+   * In browser mode, recovery sessions are stored in localStorage.
+   * In Electron, they'd be on the filesystem.
+   *
+   * A session is stale if the last autosave was more than 5 minutes ago.
+   * Recent sessions (≤ 5 min) are assumed to be from a crash.
    */
   async checkForStaleSessions(): Promise<RecoveryData> {
     const data: RecoveryData = { sessions: [] };
@@ -112,32 +151,26 @@ export class RecoveryManager {
           const content = await this._callbacks.readFile(`${recoveryDir}/${file}`);
           const session = JSON.parse(content) as RecoverySession;
 
-          // Check if this session is stale (> 5 minutes since last autosave
-          // and the app presumably crashed)
+          // Session is stale if > 5 minutes since last autosave
           const isStale = Date.now() - session.lastAutosaveAt > 300_000; // 5 minutes
 
-          if (isStale) {
-            data.sessions.push({
-              session,
-              canRecover: true,
-              description: session.originalFilePath
-                ? `Recover unsaved changes to "${session.originalFilePath}"`
-                : "Recover unsaved changes to a new document",
-            });
-          } else {
-            // Session is recent — might still be active
-            data.sessions.push({
-              session,
-              canRecover: true,
-              description: "Active session",
-            });
-          }
+          data.sessions.push({
+            session,
+            canRecover: true,
+            description: isStale
+              ? (session.originalFilePath
+                  ? `Recover unsaved changes to "${session.originalFilePath}"`
+                  : "Recover unsaved changes to a new document")
+              : "Active session (may still be in progress)",
+          });
         } catch {
-          // Skip unparseable session files
+          if (process.env.NODE_ENV !== "production") {
+            console.warn("[Recovery] Failed to parse session file:", file);
+          }
         }
       }
     } catch {
-      // Recovery directory may not exist yet
+      // Recovery directory not available — expected on first launch
     }
 
     return data;
@@ -148,23 +181,26 @@ export class RecoveryManager {
    * Returns the autosave file contents if available.
    */
   async restoreSession(sessionId: string): Promise<string | null> {
-    if (!this._callbacks) return null;
-
-    try {
-      const recoveryDir = this._callbacks.getRecoveryDir();
-      const content = await this._callbacks.readFile(
-        `${recoveryDir}/${sessionId}.json`,
-      );
-      const session = JSON.parse(content) as RecoverySession;
-
-      if (session.autosavePath && (await this._callbacks.fileExists(session.autosavePath))) {
-        return await this._callbacks.readFile(session.autosavePath);
+    const session = this._sessionMap.get(sessionId);
+    if (!session) {
+      // Try loading from storage
+      if (!this._callbacks) return null;
+      try {
+        const recoveryDir = this._callbacks.getRecoveryDir();
+        const content = await this._callbacks.readFile(
+          `${recoveryDir}/${sessionId}.json`,
+        );
+        const loaded = JSON.parse(content) as RecoverySession;
+        this._sessionMap.set(sessionId, loaded);
+        return sessionId; // Return session ID as identifier
+      } catch {
+        if (process.env.NODE_ENV !== "production") {
+          console.warn("[Recovery] Session not found in storage:", sessionId);
+        }
+        return null;
       }
-
-      return null;
-    } catch {
-      return null;
     }
+    return sessionId; // Session exists
   }
 
   /**
@@ -172,6 +208,10 @@ export class RecoveryManager {
    */
   async discardSession(sessionId: string): Promise<void> {
     await this._cleanupSession(sessionId);
+    this._sessionMap.delete(sessionId);
+    if (this._currentSession?.sessionId === sessionId) {
+      this._currentSession = null;
+    }
   }
 
   /** Get the current session info. */
@@ -179,22 +219,61 @@ export class RecoveryManager {
     return this._currentSession;
   }
 
+  /**
+   * Update recovery session after a save completes.
+   */
+  async onSaveComplete(): Promise<void> {
+    await this.updateAutosaveTimestamp();
+  }
+
   // ── Private ──────────────────────────────────────────────────────
+  /**
+   * Persist session to localStorage (browser) or filesystem (Electron).
+   * In browser mode, we use localStorage since there's no real filesystem
+   * access. The session data is lightweight (no PDF bytes).
+   */
   private async _persistSession(session: RecoverySession): Promise<void> {
-    if (!this._callbacks) return;
+    if (!this._callbacks) {
+      // Fallback: store in localStorage
+      try {
+        const existing = JSON.parse(
+          localStorage.getItem("docflow_recovery") || "{}",
+        );
+        existing[session.sessionId] = session;
+        localStorage.setItem("docflow_recovery", JSON.stringify(existing));
+      } catch {
+        workspaceErrorHandler.warn("Recovery", "localStorage may be full; cannot persist recovery session");
+      }
+      return;
+    }
 
     try {
       const recoveryDir = this._callbacks.getRecoveryDir();
-      const sessionPath = `${recoveryDir}/${session.sessionId}.json`;
-      await this._callbacks.writeFile(sessionPath, JSON.stringify(session, null, 2));
-    } catch {
-      // Session persistence is best-effort
-    }
+      await this._callbacks.writeFile(
+        `${recoveryDir}/${session.sessionId}.json`,
+        JSON.stringify(session, null, 2),
+      );      } catch {
+        if (process.env.NODE_ENV !== "production") {
+          console.warn("[Recovery] Failed to persist recovery session to disk");
+        }
+      }
   }
 
   private async _cleanupSession(sessionId: string): Promise<void> {
-    if (!this._callbacks) return;
+    // Clean up localStorage fallback
+    try {
+      const existing = JSON.parse(
+        localStorage.getItem("docflow_recovery") || "{}",
+      );
+      delete existing[sessionId];
+      localStorage.setItem("docflow_recovery", JSON.stringify(existing));
+    } catch {
+      if (process.env.NODE_ENV !== "production") {
+        console.warn("[Recovery] Failed to cleanup localStorage recovery data");
+      }
+    }
 
+    if (!this._callbacks) return;
     try {
       const recoveryDir = this._callbacks.getRecoveryDir();
       const sessionPath = `${recoveryDir}/${sessionId}.json`;

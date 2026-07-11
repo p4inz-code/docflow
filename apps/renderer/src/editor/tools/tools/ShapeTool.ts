@@ -176,7 +176,6 @@ export class ShapeTool implements Tool {
     rect: { x: number; y: number; width: number; height: number },
     shiftHeld: boolean,
   ): void {
-    const store = useEditorStore.getState();
     const now = Date.now();
     const newId = `shape_${generateId()}`;
 

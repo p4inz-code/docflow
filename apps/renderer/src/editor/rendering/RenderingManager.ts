@@ -25,7 +25,6 @@ import type {
   PageOverlayContainer,
   RenderStats,
 } from "../types/rendering";
-import { RenderLifecycle } from "../types/rendering";
 import { ObjectRegistry } from "./ObjectRegistry";
 import { DirtyTracker } from "./DirtyTracker";
 import { RenderScheduler } from "./RenderScheduler";
@@ -38,6 +37,7 @@ import {
   HighlightRenderer,
   SignatureRenderer,
   StampRenderer,
+  WhiteoutRenderer,
 } from "./renderers";
 
 // ── Rendering Manager ──────────────────────────────────────────────
@@ -54,6 +54,12 @@ export class RenderingManager {
   private _scheduler = new RenderScheduler();
   /** Z-index manager for stacking order. */
   private _zIndex = new ZIndexManager();
+
+  /**
+   * Callback fired after a page overlay container is created.
+   * Used by OverlayRenderer to re-mount objects on page restore.
+   */
+  onContainerCreated: ((page: number) => void) | null = null;
 
   constructor() {
     this._registerDefaultRenderers();
@@ -119,6 +125,10 @@ export class RenderingManager {
       interactionLayer,
       renderers: new Map(),
     });
+
+    // Notify subscribers that a container was created (e.g. OverlayRenderer
+    // uses this to re-mount objects when pages are restored after virtualization).
+    this.onContainerCreated?.(page);
   }
 
   /** Remove an overlay container for a given page. */
@@ -135,6 +145,29 @@ export class RenderingManager {
     this._containers.delete(page);
   }
 
+  /**
+   * Remove an overlay container for a given page, but keep objects
+   * registered in the ObjectRegistry so they can be re-mounted when
+   * the page is recreated (virtual page restore).
+   */
+  unloadPageContainer(page: number): void {
+    const entry = this._containers.get(page);
+    if (!entry) return;
+
+    // Destroy renderers and remove their DOM elements
+    for (const renderer of entry.renderers.values()) {
+      renderer.destroy();
+    }
+    entry.renderers.clear();
+    entry.container.remove();
+    this._containers.delete(page);
+
+    // NOTE: Do NOT call _registry.unregister() here!
+    // Objects remain in the registry so they can be re-mounted
+    // when the page is scrolled back into view.
+    // The registry is the permanent source of truth for object existence.
+  }
+
   /** Destroy all page containers. */
   destroyAllContainers(): void {
     for (const page of Array.from(this._containers.keys())) {
@@ -145,6 +178,10 @@ export class RenderingManager {
   // ── Object Lifecycle ─────────────────────────────────────────────
   /** Mount an object into its page's overlay container. */
   mountObject(object: EditableObject): void {
+    // If already mounted, skip duplicate mount
+    const existing = this._findRenderer(object.id);
+    if (existing) return;
+
     const entry = this._containers.get(object.page);
     if (!entry) return;
 
@@ -152,12 +189,20 @@ export class RenderingManager {
     if (!factory) return;
 
     const renderer = factory(object);
-    const zIndex = this._zIndex.assign(object);
+    let zIndex = this._zIndex.get(object.id);
+    if (zIndex === 0) {
+      // Only assign new z-index if object doesn't already have one
+      zIndex = this._zIndex.assign(object);
+    }
 
     renderer.element.style.zIndex = String(zIndex);
     entry.container.insertBefore(renderer.element, entry.selectionLayer);
     entry.renderers.set(object.id, renderer);
-    this._registry.register(object);
+
+    // Only register if not already registered (handles page restore)
+    if (!this._registry.getById(object.id)) {
+      this._registry.register(object);
+    }
     this._dirtyTracker.markCreated(object.id);
     this._scheduler.schedule(object.id, { created: true });
   }
@@ -273,6 +318,7 @@ export class RenderingManager {
     this._rendererFactories.set("highlight" as ObjectType, (obj) => new HighlightRenderer(obj));
     this._rendererFactories.set("signature" as ObjectType, (obj) => new SignatureRenderer(obj));
     this._rendererFactories.set("stamp" as ObjectType, (obj) => new StampRenderer(obj));
+    this._rendererFactories.set("whiteout" as ObjectType, (obj) => new WhiteoutRenderer(obj));
   }
 
   private _findRenderer(id: string): ObjectRenderer | null {

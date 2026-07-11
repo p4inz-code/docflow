@@ -102,8 +102,6 @@ export const useWorkspaceStore = create<WorkspaceState>()(
       set((state) => {
         const idx = state.documents.findIndex((d) => d.id === id);
         if (idx === -1) return state;
-        const doc = state.documents[idx];
-
         // Track recently closed for undo-close
         const recentlyClosed = [...state.recentlyClosed, id].slice(-20);
 

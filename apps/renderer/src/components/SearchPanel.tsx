@@ -18,6 +18,7 @@
 
 import { useState, useCallback, useRef, useEffect } from "react";
 import type { PDFDocumentProxy } from "pdfjs-dist";
+import { Search, X } from "./Icons";
 
 interface SearchPanelProps {
   pdf: PDFDocumentProxy;
@@ -204,7 +205,7 @@ export default function SearchPanel({ pdf, isOpen, onToggle }: SearchPanelProps)
         }}
         title="Search (Ctrl+F)"
       >
-        🔍
+        <Search size={14} aria-hidden="true" />
       </button>
     );
   }
@@ -262,7 +263,7 @@ export default function SearchPanel({ pdf, isOpen, onToggle }: SearchPanelProps)
             }}
             title="Close (Esc)"
           >
-            ✕
+            <X size={14} aria-hidden="true" />
           </button>
         </div>
 

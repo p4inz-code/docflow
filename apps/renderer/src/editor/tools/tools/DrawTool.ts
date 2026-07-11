@@ -87,6 +87,7 @@ export class DrawTool implements Tool {
   }
 
   onPointerUp(_event: InteractionEvent): void {
+    void _event;
     if (!this._isDrawing) return;
     this._isDrawing = false;
 
@@ -174,7 +175,6 @@ export class DrawTool implements Tool {
   }
 
   private _createDrawing(): void {
-    const store = useEditorStore.getState();
     const now = Date.now();
     const newId = `draw_${generateId()}`;
 

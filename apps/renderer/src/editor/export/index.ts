@@ -18,7 +18,7 @@ export { SaveManager } from "./SaveManager";
 export type { SaveCallbacks } from "./SaveManager";
 
 export { AutosaveManager } from "./AutosaveManager";
-export type { AutosaveCallbacks } from "./AutosaveManager";
+
 
 export { RecoveryManager } from "./RecoveryManager";
 export type { RecoveryCallbacks, RecoveryData, RecoverySessionInfo } from "./RecoveryManager";

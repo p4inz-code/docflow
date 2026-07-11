@@ -17,7 +17,7 @@
 import type { Tool } from "../../types/tools";
 import type { Command } from "../../types/commands";
 import { ToolType } from "../../types/tools";
-import { CursorStyle, InteractionPhase } from "../../types/editor";
+import { CursorStyle } from "../../types/editor";
 import type { InteractionEvent } from "../../types/interaction";
 import { useEditorStore } from "../../state/editorStore";
 import { transformSystem } from "../../editing/TransformSystem";
@@ -51,7 +51,6 @@ export class SelectTool implements Tool {
   readonly shortcut = "v";
   readonly cursor = CursorStyle.Default;
 
-  private _renderingManager: RenderingManager | null = null;
   private _drag: DragState = {
     type: "none",
     objectId: null,
@@ -65,8 +64,8 @@ export class SelectTool implements Tool {
   private _guideContainer: HTMLElement | null = null;
   private _pendingCommand: Command | null = null;
 
-  setRenderingManager(manager: RenderingManager): void {
-    this._renderingManager = manager;
+  setRenderingManager(_manager: RenderingManager): void {
+    // Rendering manager reference reserved for future use
   }
 
   /** Set the element where smart guides will be rendered. */

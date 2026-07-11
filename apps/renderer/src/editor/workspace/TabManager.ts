@@ -46,7 +46,7 @@ export class TabManager {
       if (result === "cancel") return false;
       if (result === "save-and-close") {
         // Signal parent to save; then close
-        return "save";
+        return false;
       }
     }
 

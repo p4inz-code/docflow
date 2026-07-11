@@ -5,7 +5,7 @@
  * title, subject, keywords, page count, file info, and statistics.
  */
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import Dialog from "./Dialog";
 import { useActiveDocument } from "../../editor/workspace/WorkspaceStore";
 
@@ -25,11 +25,11 @@ export default function DocumentPropertiesDialog({
   const [keywords, setKeywords] = useState("");
 
   // Reset when dialog opens
-  useState(() => {
+  useEffect(() => {
     if (open && doc) {
       setTitle(doc.name);
     }
-  });
+  }, [open, doc]);
 
   const handleSave = useCallback(() => {
     // Future: persist metadata to PDF

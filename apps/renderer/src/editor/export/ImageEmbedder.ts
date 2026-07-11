@@ -57,6 +57,9 @@ export class ImageEmbedder {
       }
       return image;
     } catch {
+      if (process.env.NODE_ENV !== "production") {
+        console.warn("[ImageEmbedder] Failed to cache-embed image");
+      }
       return null;
     }
   }
@@ -91,6 +94,9 @@ export class ImageEmbedder {
       // Unsupported format
       return null;
     } catch {
+      if (process.env.NODE_ENV !== "production") {
+        console.warn("[ImageEmbedder] Failed to embed image by type detection");
+      }
       return null;
     }
   }

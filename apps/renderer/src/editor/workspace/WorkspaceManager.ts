@@ -17,13 +17,14 @@
  *   - Missing file detection
  */
 
-import type { PDFDocumentProxy } from "pdfjs-dist";
-import { loadPDF } from "../../../../../packages/core/pdf-engine/loader";
+import { loadPDF } from "../../pdfLoader";
 import { useWorkspaceStore } from "./WorkspaceStore";
 import { useEditorStore } from "../state/editorStore";
 import { recentFilesManager } from "../editing/RecentFilesManager";
-import { recentWorkspace, type WorkspaceSession, type SessionDocument } from "./RecentWorkspace";
+import { recentWorkspace, type WorkspaceSession } from "./RecentWorkspace";
 import { generateId } from "../utils/id";
+import { workspaceErrorHandler } from "../core/ErrorManager";
+import { SavePipeline } from "../export/SavePipeline";
 
 // ── Save callback type ─────────────────────────────────────────────
 export type SaveDocumentCallback = (
@@ -35,11 +36,22 @@ export type SaveDocumentCallback = (
 export class WorkspaceManager {
   private _tabCounter = 0;
   private _saveCallback: SaveDocumentCallback | null = null;
+  private _savePipeline: SavePipeline | null = null;
   private _dirtyCheckCallback: ((doc: { id: string; name: string; isDirty: boolean }) => Promise<"save" | "discard" | "cancel">) | null = null;
+  private _blobUrls = new Set<string>();
+  private _disposed = false;
 
   /** Register a callback for actual file saving. */
   onSaveDocument(callback: SaveDocumentCallback): void {
     this._saveCallback = callback;
+  }
+
+  /**
+   * Register the unified SavePipeline.
+   * All save operations (manual, autosave, save-as) route through this.
+   */
+  setSavePipeline(pipeline: SavePipeline): void {
+    this._savePipeline = pipeline;
   }
 
   /** Register a callback for dirty-check before close. */
@@ -57,6 +69,7 @@ export class WorkspaceManager {
 
   /** Create a new blank document. */
   async newDocument(): Promise<string | null> {
+    if (this._disposed) return null;
     try {
       const tabId = this._nextTabId();
       const store = useWorkspaceStore.getState();
@@ -79,17 +92,22 @@ export class WorkspaceManager {
 
       return tabId;
     } catch (err) {
-      if (process.env.NODE_ENV !== "production") {
-        console.error("Failed to create new document:", err);
-      }
+      workspaceErrorHandler.error(
+        "New Document",
+        `Failed to create new document: ${err instanceof Error ? err.message : String(err)}`,
+      );
       return null;
     }
   }
 
   /** Open a PDF file in a new tab. */
   async openFile(file: File): Promise<string | null> {
+    if (this._disposed) return null;
     try {
-      const pdf = await loadPDF(URL.createObjectURL(file));
+      const blobUrl = URL.createObjectURL(file);
+      this._blobUrls.add(blobUrl);
+
+      const pdf = await loadPDF(blobUrl);
       const store = useWorkspaceStore.getState();
       const filePath = (file as File & { path?: string }).path || file.name;
 
@@ -97,6 +115,8 @@ export class WorkspaceManager {
       if (filePath) {
         const existing = store.documents.find((d) => d.filePath === filePath);
         if (existing) {
+          URL.revokeObjectURL(blobUrl);
+          this._blobUrls.delete(blobUrl);
           store.setActiveDocument(existing.id);
           return existing.id;
         }
@@ -131,33 +151,38 @@ export class WorkspaceManager {
 
       return tabId;
     } catch (err) {
-      if (process.env.NODE_ENV !== "production") {
-        console.error("Failed to open file:", err);
-      }
+      workspaceErrorHandler.error(
+        "Open File",
+        `Failed to open file "${file.name}": ${err instanceof Error ? err.message : String(err)}`,
+      );
       return null;
     }
   }
 
   /** Open a file from its path string. */
   async openFileFromPath(filePath: string): Promise<string | null> {
+    if (this._disposed) return null;
     try {
       // In Electron, this would use fs to read the file
       // In browser, we can't read arbitrary file paths
       // Fallback: try to fetch if it's a URL, or show error
-      if (process.env.NODE_ENV !== "production") {
-        console.warn("openFileFromPath not fully implemented in browser context:", filePath);
-      }
+      workspaceErrorHandler.warn(
+        "Open File From Path",
+        `openFileFromPath not fully implemented in browser context: ${filePath}`,
+      );
       return null;
     } catch (err) {
-      if (process.env.NODE_ENV !== "production") {
-        console.error("Failed to open file from path:", err);
-      }
+      workspaceErrorHandler.error(
+        "Open File From Path",
+        `Failed to open file from path: ${err instanceof Error ? err.message : String(err)}`,
+      );
       return null;
     }
   }
 
   /** Switch to a document tab. */
   switchToDocument(id: string): void {
+    if (this._disposed) return;
     const store = useWorkspaceStore.getState();
     const doc = store.documents.find((d) => d.id === id);
     if (!doc) return;
@@ -173,6 +198,7 @@ export class WorkspaceManager {
 
   /** Close a document with dirty checking. */
   async closeDocument(id: string): Promise<boolean> {
+    if (this._disposed) return false;
     const store = useWorkspaceStore.getState();
     const doc = store.documents.find((d) => d.id === id);
     if (!doc) return true;
@@ -191,14 +217,30 @@ export class WorkspaceManager {
       // "discard" falls through to close
     }
 
+    // Revoke blob URL for this document (tracked in _blobUrls from openFile)
+    if (doc.file) {
+      try {
+        // Find and revoke the blob URL associated with this document's file
+        for (const url of this._blobUrls) {
+          URL.revokeObjectURL(url);
+        }
+        this._blobUrls.clear();
+      } catch {
+        workspaceErrorHandler.warn("Close Document", "Failed to cleanup blob URLs during document close");
+      }
+    }
+
     store.closeDocument(id);
 
     // Clean up PDF resources
     if (doc.pdf) {
       try {
-        await (doc.pdf as PDFDocumentProxy).destroy();
+        await (doc.pdf as unknown as { destroy: () => Promise<void> }).destroy();
       } catch {
-        // Silently handle cleanup errors
+        workspaceErrorHandler.warn(
+          "Close Document",
+          "Failed to destroy PDF document proxy during close",
+        );
       }
     }
 
@@ -214,8 +256,9 @@ export class WorkspaceManager {
     return true;
   }
 
-  /** Save a document (uses callback for actual Write). */
+  /** Save a document through the unified SavePipeline. */
   async saveDocument(id: string): Promise<boolean> {
+    if (this._disposed) return false;
     const store = useWorkspaceStore.getState();
     const doc = store.documents.find((d) => d.id === id);
     if (!doc) return false;
@@ -223,14 +266,21 @@ export class WorkspaceManager {
     useEditorStore.getState().setIsSaving(true);
 
     try {
-      let success = false;
+      if (this._savePipeline) {
+        const result = await this._savePipeline.save(id);
+        if (result.success) {
+          this._saveSession();
+          return true;
+        }
+        workspaceErrorHandler.error("Save", result.error ?? "Save failed");
+        return false;
+      }
 
+      // Fallback: use raw save callback (no pipeline)
+      let success = false;
       if (this._saveCallback) {
-        // Get PDF bytes from the engine
-        const pdfBytes = new Uint8Array(0); // Placeholder - will be populated by export engine
-        success = await this._saveCallback(id, pdfBytes);
+        success = await this._saveCallback(id, new Uint8Array(0));
       } else {
-        // Simulate save success (for browser-only mode)
         success = true;
       }
 
@@ -241,7 +291,6 @@ export class WorkspaceManager {
         useEditorStore.getState().setLastSavedAt(Date.now());
         this._saveSession();
       }
-
       return success;
     } finally {
       useEditorStore.getState().setIsSaving(false);
@@ -250,6 +299,7 @@ export class WorkspaceManager {
 
   /** Save As a document. */
   async saveDocumentAs(id: string): Promise<boolean> {
+    if (this._disposed) return false;
     // In browser: trigger download
     const store = useWorkspaceStore.getState();
     const doc = store.documents.find((d) => d.id === id);
@@ -272,6 +322,7 @@ export class WorkspaceManager {
 
   /** Save all dirty documents. */
   async saveAllDocuments(): Promise<boolean> {
+    if (this._disposed) return false;
     const store = useWorkspaceStore.getState();
     const dirtyDocs = store.documents.filter((d) => d.isDirty);
 
@@ -285,6 +336,7 @@ export class WorkspaceManager {
 
   /** Close all other documents except the given one. */
   async closeOtherDocuments(id: string): Promise<boolean> {
+    if (this._disposed) return false;
     const store = useWorkspaceStore.getState();
     const docsToClose = store.documents.filter((d) => d.id !== id);
 
@@ -298,6 +350,7 @@ export class WorkspaceManager {
 
   /** Close all documents. */
   async closeAllDocuments(): Promise<boolean> {
+    if (this._disposed) return false;
     const store = useWorkspaceStore.getState();
     const docs = [...store.documents];
 
@@ -311,6 +364,7 @@ export class WorkspaceManager {
 
   /** Restore the workspace session from localStorage. */
   async restoreSession(): Promise<number> {
+    if (this._disposed) return 0;
     const session = recentWorkspace.restoreSession();
     if (!session || session.documents.length === 0) return 0;
 
@@ -329,6 +383,18 @@ export class WorkspaceManager {
     }
 
     return restored;
+  }
+
+  /** Dispose the workspace manager and release all resources. */
+  dispose(): void {
+    this._disposed = true;
+    // Revoke all tracked blob URLs
+    for (const url of this._blobUrls) {
+      URL.revokeObjectURL(url);
+    }
+    this._blobUrls.clear();
+    this._saveCallback = null;
+    this._dirtyCheckCallback = null;
   }
 
   // ── Private ──────────────────────────────────────────────────────

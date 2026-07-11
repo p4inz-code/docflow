@@ -44,7 +44,7 @@ export class MetadataWriter {
     if (metadata.title !== undefined) pdfDoc.setTitle(metadata.title);
     if (metadata.author !== undefined) pdfDoc.setAuthor(metadata.author);
     if (metadata.subject !== undefined) pdfDoc.setSubject(metadata.subject);
-    if (metadata.keywords !== undefined) pdfDoc.setKeywords(metadata.keywords);
+    if (metadata.keywords !== undefined) pdfDoc.setKeywords(metadata.keywords.split(",").map(k => k.trim()));
 
     // Always set producer and creator
     pdfDoc.setProducer(metadata.producer ?? "Docflow");

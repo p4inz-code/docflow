@@ -2,7 +2,7 @@
    Docflow — Application Styles
    ═══════════════════════════════════════════════════════════════════ */
 
-/* ── Theme Variables ─────────────────────────────────────────────── */
+/* ── Dark Theme (default) ────────────────────────────────────────── */
 :root {
   --bg-primary: #111;
   --bg-secondary: #1a1a1a;
@@ -48,6 +48,78 @@
   --transition-slow: 0.2s;
 }
 
+/* ── Light Theme ─────────────────────────────────────────────────── */
+.theme-light {
+  --bg-primary: #f5f5f5;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #f0f0f0;
+  --bg-hover: #e8e8e8;
+  --bg-active: #ddd;
+
+  --text-primary: #1a1a1a;
+  --text-secondary: #333;
+  --text-tertiary: #555;
+  --text-muted: #777;
+  --text-dim: #999;
+  --text-faint: #aaa;
+
+  --border-primary: #d5d5d5;
+  --border-secondary: #ddd;
+  --border-tertiary: #e0e0e0;
+
+  --accent: #1a73e8;
+  --accent-bg: #e8f0fe;
+  --accent-hover: #1557b0;
+
+  --danger: #d93025;
+  --danger-bg: #fce8e6;
+  --warning: #e37400;
+  --warning-bg: #fef7e0;
+  --success: #188038;
+  --success-bg: #e6f4ea;
+
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.12);
+
+  --skeleton-base: #e0e0e0;
+  --skeleton-shine: #f0f0f0;
+}
+
+/* ── System theme (respects user preference) ─────────────────────── */
+@media (prefers-color-scheme: light) {
+  .theme-system {
+    --bg-primary: #f5f5f5;
+    --bg-secondary: #ffffff;
+    --bg-tertiary: #f0f0f0;
+    --bg-hover: #e8e8e8;
+    --bg-active: #ddd;
+    --text-primary: #1a1a1a;
+    --text-secondary: #333;
+    --text-tertiary: #555;
+    --text-muted: #777;
+    --text-dim: #999;
+    --text-faint: #aaa;
+    --border-primary: #d5d5d5;
+    --border-secondary: #ddd;
+    --border-tertiary: #e0e0e0;
+    --accent: #1a73e8;
+    --accent-bg: #e8f0fe;
+    --accent-hover: #1557b0;
+    --danger: #d93025;
+    --danger-bg: #fce8e6;
+    --warning: #e37400;
+    --warning-bg: #fef7e0;
+    --success: #188038;
+    --success-bg: #e6f4ea;
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1);
+    --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.12);
+    --skeleton-base: #e0e0e0;
+    --skeleton-shine: #f0f0f0;
+  }
+}
+
 /* ── Reset & Base ────────────────────────────────────────────────── */
 *,
 *::before,
@@ -71,6 +143,8 @@ body {
   background: var(--bg-primary);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  min-width: 800px;
+  min-height: 400px;
 }
 
 #root {
@@ -78,6 +152,8 @@ body {
   height: 100%;
   display: flex;
   flex-direction: column;
+  min-height: 0;
+  min-width: 0;
 }
 
 /* ── Scrollbar ───────────────────────────────────────────────────── */
@@ -223,9 +299,9 @@ body {
 .skeleton {
   background: linear-gradient(
     90deg,
-    #1a1a1a 25%,
-    #222 50%,
-    #1a1a1a 75%
+    var(--skeleton-base, #1a1a1a) 25%,
+    var(--skeleton-shine, #222) 50%,
+    var(--skeleton-base, #1a1a1a) 75%
   );
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;

@@ -4,11 +4,11 @@ import PDFViewer from "./components/PDFViewer";
 import LazyThumbnails from "./components/LazyThumbnails";
 import DocumentTabs from "./components/DocumentTabs";
 import MenuBar from "./components/menu/MenuBar";
+import Toolbar from "./components/Toolbar";
 import CommandPalette from "./components/CommandPalette";
-import SearchPanel from "./components/SearchPanel";
+import { FileText, ChevronLeft, ChevronRight } from "./components/Icons";
 import { ErrorProvider } from "./components/ErrorDialog";
-import { ErrorBoundary } from "./components/ErrorBoundary";
-import { accessibilityManager } from "./editor/core/AccessibilityManager";
+import { ScreenReaderAnnouncer, useAnnouncer } from "./components/ScreenReaderAnnouncer";
 import { keyboardShortcuts } from "./editor/editing/KeyboardShortcuts";
 import {
   ConfirmDialog,
@@ -20,6 +20,9 @@ import {
 import ExportDialog from "./editor/export/ExportDialog";
 import type { ExportOptions } from "./editor/export/ExportDialog";
 import { ExportEngine } from "./editor/export/ExportEngine";
+import { SavePipeline } from "./editor/export/SavePipeline";
+import { AutosaveManager } from "./editor/export/AutosaveManager";
+import { RecoveryManager } from "./editor/export/RecoveryManager";
 import { importEngine, SUPPORTED_IMAGE_TYPES, SUPPORTED_DOCUMENT_TYPES } from "./editor/export/ImportEngine";
 import { useEditorStore } from "./editor/state/editorStore";
 import {
@@ -28,7 +31,9 @@ import {
   useActiveDocument,
 } from "./editor/workspace/WorkspaceStore";
 import { workspaceManager } from "./editor/workspace/WorkspaceManager";
+import { workspaceErrorHandler } from "./editor/core/ErrorManager";
 import { recentFilesManager } from "./editor/editing/RecentFilesManager";
+import { useTheme } from "./hooks/useTheme";
 import { settingsManager } from "./editor/core/Settings";
 
 // ── Confirm dialog state ───────────────────────────────────────────
@@ -38,10 +43,21 @@ interface ConfirmCloseState {
 }
 
 export default function App() {
-  const { openPDF } = usePDF();
+  return (
+    <ErrorProvider>
+      <ScreenReaderAnnouncer>
+        <AppContent />
+      </ScreenReaderAnnouncer>
+    </ErrorProvider>
+  );
+}
+
+// ── Inner component (must be inside providers) ─────────────────────
+function AppContent() {
+  useTheme();
+  usePDF();
   const activePdf = useActivePDF();
   const activeDoc = useActiveDocument();
-  const [activePage, setActivePage] = useState(1);
   const [sidebarVisible, setSidebarVisible] = useState(
     settingsManager.get("showSidebar"),
   );
@@ -51,16 +67,158 @@ export default function App() {
   const [aboutOpen, setAboutOpen] = useState(false);
   const [pageManagerOpen, setPageManagerOpen] = useState(false);
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
+  const [zoomLevel, setZoomLevel] = useState(
+    settingsManager.get("defaultZoom"),
+  );
+  const [fitMode, setFitMode] = useState<"width" | "page">(
+    settingsManager.get("defaultFitMode"),
+  );
   const [confirmClose, setConfirmClose] =
     useState<ConfirmCloseState | null>(null);
   const viewerRef = useRef<HTMLDivElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const dragCounter = useRef(0);
-  const exportEngineRef = useRef(new ExportEngine());
 
   const setStoreActivePage = useEditorStore((s) => s.setActivePage);
   const documents = useWorkspaceStore((s) => s.documents);
-  const [inspectorVisible, setInspectorVisible] = useState(true);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const dragCounter = useRef(0);
+
+  // ── Accessibility announcer ──
+  const { announce } = useAnnouncer();
+
+  // ── Create singleton services (lazy, once) ──────────────────
+  const exportEngineRef = useRef<ExportEngine | null>(null);
+  const savePipelineRef = useRef<SavePipeline | null>(null);
+  const autosaveManagerRef = useRef<AutosaveManager | null>(null);
+  const recoveryManagerRef = useRef<RecoveryManager | null>(null);
+  const initDoneRef = useRef(false);
+
+  if (!exportEngineRef.current) {
+    exportEngineRef.current = new ExportEngine();
+  }
+
+  if (!savePipelineRef.current) {
+    savePipelineRef.current = new SavePipeline(exportEngineRef.current);
+    // Register the write callback (browser: trigger download, Electron: write to fs)
+    savePipelineRef.current.setWriteFileCallback(async (_path, _data) => {
+      // In browser mode, actual write is handled by triggering download
+      // In Electron, this would write to the file system
+    });
+  }
+
+  if (!autosaveManagerRef.current) {
+    autosaveManagerRef.current = new AutosaveManager(savePipelineRef.current);
+    // Sync with settings
+    const settings = settingsManager.get();
+    autosaveManagerRef.current.configure({
+      enabled: settings.autosaveEnabled,
+      interval: settings.autosaveInterval,
+    });
+  }
+
+  if (!recoveryManagerRef.current) {
+    recoveryManagerRef.current = new RecoveryManager();
+    // In browser mode, recovery is localStorage-backed (no real filesystem)
+    recoveryManagerRef.current.setSavePipeline(savePipelineRef.current);
+  }
+
+  const savePipeline = savePipelineRef.current;
+  const autosaveManager = autosaveManagerRef.current;
+  const recoveryManager = recoveryManagerRef.current;
+
+  // ── Wire the SavePipeline into WorkspaceManager ──────────────
+  useEffect(() => {
+    if (initDoneRef.current) return;
+    initDoneRef.current = true;
+
+    // Wire SavePipeline into WorkspaceManager
+    workspaceManager.setSavePipeline(savePipeline);
+
+    // Register workspace save callback (for download trigger)
+    workspaceManager.onSaveDocument(async (_docId, _pdfBytes) => {
+      // In browser mode, actual file write is handled via download
+      // The SavePipeline handles the export; this callback confirms
+      return true;
+    });
+
+    // Subscribe to settings changes for autosave
+    const unsubSettings = settingsManager.onChange((settings) => {
+      autosaveManager.configure({
+        enabled: settings.autosaveEnabled,
+        interval: settings.autosaveInterval,
+      });
+    });
+
+    // Attempt workspace session restore
+    workspaceManager.restoreSession().then((restored) => {
+      if (restored > 0 && process.env.NODE_ENV !== "production") {
+        workspaceErrorHandler.warn(
+          "Session Restore",
+          `Restored ${restored} document(s) from previous session`,
+        );
+      }
+    });
+
+    return () => {
+      unsubSettings();
+    };
+  }, [savePipeline, autosaveManager]);
+
+  // ── Start/stop autosave based on document state ──────────────
+  useEffect(() => {
+    if (documents.length > 0) {
+      autosaveManager.start();
+      // Start a recovery session for each open document
+      for (const doc of documents) {
+        if (doc.filePath) {
+          recoveryManager.startSession(doc.filePath);
+        }
+      }
+    } else {
+      autosaveManager.stop();
+      recoveryManager.endAllSessions();
+    }
+
+    return () => {
+      // Cleanup is handled by the next effect cycle
+    };
+  }, [documents.length, autosaveManager, recoveryManager]);
+
+  // ── Crash safety handlers ───────────────────────────────────
+  useEffect(() => {
+    // beforeunload: warn user of unsaved changes
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      const wsStore = useWorkspaceStore.getState();
+      const hasUnsaved = wsStore.documents.some((d) => d.isDirty);
+      if (hasUnsaved) {
+        e.preventDefault();
+        e.returnValue = "You have unsaved changes. Are you sure you want to leave?";
+      }
+    };
+
+    // visibilitychange: autosave dirty documents when tab is hidden
+    // This covers browser tab close, navigation away, and mobile suspend
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        // Tab is being hidden — force autosave of all dirty documents
+        autosaveManager.flush();
+      }
+    };
+
+    // pagehide: similar to beforeunload but fires on mobile too
+    const handlePageHide = () => {
+      autosaveManager.flush();
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("pagehide", handlePageHide);
+
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("pagehide", handlePageHide);
+    };
+  }, [autosaveManager]);
 
   // ── Initialize accessibility and keyboard shortcuts ──
   useEffect(() => {
@@ -140,69 +298,12 @@ export default function App() {
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, []);
 
-  // ── Sync active page ──
-  useEffect(() => {
-    const viewer = viewerRef.current;
-    if (!viewer || !activePdf) return;
-
-    const handleScroll = () => {
-      const viewerRect = viewer.getBoundingClientRect();
-      const pages = viewer.querySelectorAll<HTMLElement>(
-        "[data-page-index]",
-      );
-      let closestPage = activePage;
-      let closestDist = Infinity;
-
-      pages.forEach((page) => {
-        const rect = page.getBoundingClientRect();
-        const dist = Math.abs(rect.top - viewerRect.top);
-        if (dist < closestDist) {
-          closestDist = dist;
-          closestPage = parseInt(
-            page.getAttribute("data-page-index") || "1",
-            10,
-          );
-        }
-      });
-
-      setActivePage(closestPage);
-      setStoreActivePage(closestPage);
-    };
-
-    const mutationObserver = new MutationObserver(() => {
-      if (
-        viewer.querySelectorAll("[data-page-index]").length > 0
-      ) {
-        requestAnimationFrame(handleScroll);
-      }
-    });
-
-    mutationObserver.observe(viewer, { childList: true, subtree: true });
-    viewer.addEventListener("scroll", handleScroll, { passive: true });
-
-    const checkInterval = setInterval(() => {
-      if (
-        viewer.querySelectorAll("[data-page-index]").length > 0
-      ) {
-        handleScroll();
-        clearInterval(checkInterval);
-      }
-    }, 100);
-    setTimeout(() => clearInterval(checkInterval), 5000);
-
-    return () => {
-      viewer.removeEventListener("scroll", handleScroll);
-      mutationObserver.disconnect();
-      clearInterval(checkInterval);
-    };
-  }, [activePdf, activePage, setStoreActivePage]);
-
   // ── Import Engine Integration ──
   useEffect(() => {
     importEngine.onProgress = (progress) => {
-      // Future: wire progress to UI
+      announce(`Importing: ${progress.stage} (${progress.current}/${progress.total})`);
     };
-  }, []);
+  }, [announce]);
 
   // ── Drag & Drop (uses ImportEngine) ──
   useEffect(() => {
@@ -237,12 +338,17 @@ export default function App() {
 
       // Import images via ImportEngine
       if (imageFiles.length > 0) {
+        announce(`Importing ${imageFiles.length} image(s)...`);
         await importEngine.importFiles(imageFiles);
       }
 
       // Open PDFs via workspaceManager (avoids double-loading)
       for (const file of pdfFiles) {
-        await handleFileOpen(file);
+        const tabId = await workspaceManager.openFile(file);
+        if (tabId) {
+          workspaceManager.switchToDocument(tabId);
+          announce(`Opened ${file.name}`);
+        }
       }
     };
 
@@ -257,7 +363,7 @@ export default function App() {
       document.removeEventListener("dragleave", handleDragLeave);
       document.removeEventListener("drop", handleDrop);
     };
-  }, []);
+  }, [announce]);
 
   // ── Clipboard paste (uses ImportEngine) ──
   useEffect(() => {
@@ -269,18 +375,17 @@ export default function App() {
       if (tag === "INPUT" || tag === "TEXTAREA") return;
 
       const result = await importEngine.importFromClipboard(e.clipboardData);
-      if (!result.success && result.errors.length > 0) {
-        // Silently fail for clipboard — user may have copied non-image content
+      if (result.count > 0) {
+        announce(`Pasted ${result.count} item(s)`);
       }
     };
 
     document.addEventListener("paste", handlePaste);
     return () => document.removeEventListener("paste", handlePaste);
-  }, []);
+  }, [announce]);
 
   const handlePageClick = useCallback(
     (pageNum: number) => {
-      setActivePage(pageNum);
       setStoreActivePage(pageNum);
       const el = document.querySelector(
         `[data-page-index="${pageNum}"]`,
@@ -294,8 +399,7 @@ export default function App() {
   // ── File operations (uses ImportEngine for images, workspace for PDFs) ──
   const handleFileOpen = useCallback(async (file: File) => {
     if (SUPPORTED_IMAGE_TYPES.includes(file.type)) {
-      // Import image via ImportEngine
-      const result = await importEngine.importFile(file);
+      await importEngine.importFile(file);
       return;
     }
     if (SUPPORTED_DOCUMENT_TYPES.includes(file.type)) {
@@ -309,7 +413,7 @@ export default function App() {
   const handleFileChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
-      if (file) handleFileOpen(file);
+      if (file) void handleFileOpen(file);
       // Reset input so same file can be re-opened
       e.target.value = "";
     },
@@ -331,65 +435,34 @@ export default function App() {
     if (!confirmClose) return;
     await workspaceManager.saveDocument(confirmClose.docId);
     workspaceManager.closeDocument(confirmClose.docId);
+    announce(`Saved and closed ${confirmClose.docName}`);
     setConfirmClose(null);
-  }, [confirmClose]);
+  }, [confirmClose, announce]);
 
   const handleDiscardClose = useCallback(() => {
     if (!confirmClose) return;
     workspaceManager.closeDocument(confirmClose.docId);
+    announce(`Closed ${confirmClose.docName} without saving`);
     setConfirmClose(null);
-  }, [confirmClose]);
+  }, [confirmClose, announce]);
 
-  // ── Tab switching ──
-  const handleTabSwitch = useCallback(
-    (docId: string) => {
-      workspaceManager.switchToDocument(docId);
-    },
-    [],
-  );
-
-  // ── Menu callbacks ──
-  const handleOpenFile = useCallback(() => {
-    fileInputRef.current?.click();
-  }, []);
-
-  const handleToggleSidebar = useCallback(() => {
-    setSidebarVisible((p) => !p);
-  }, []);
-
-  const handleToggleInspector = useCallback(() => {
-    setInspectorVisible((p) => !p);
-  }, []);
-
-  const handleDocumentProperties = useCallback(() => {
-    if (activeDoc) setPropertiesOpen(true);
-  }, [activeDoc]);
-
-  const handlePreferences = useCallback(() => {
-    setPreferencesOpen(true);
-  }, []);
-
-  const handleAbout = useCallback(() => {
-    setAboutOpen(true);
-  }, []);
-
-  const handleExport = useCallback(() => {
-    setExportDialogOpen(true);
-  }, []);
-
+  // ── Export handler ──────────────────────────────────────────────
   const handleExportStart = useCallback(async (options: ExportOptions) => {
     const store = useEditorStore.getState();
     const wsStore = useWorkspaceStore.getState();
     const doc = wsStore.documents.find(d => d.id === wsStore.activeDocumentId);
     if (!doc?.pdf) return;
 
+    setExportDialogOpen(false);
+
     try {
+      announce("Starting export...");
       // Get the original PDF bytes
       const pdfData = await doc.pdf.getData();
       const pdfBytes = new Uint8Array(pdfData);
       const overlayObjects = store.overlayObjects;
 
-      // Configure export range
+      // Determine export range
       let range;
       switch (options.range) {
         case "all":
@@ -423,7 +496,7 @@ export default function App() {
       }
 
       // Set up export engine
-      const engine = exportEngineRef.current;
+      const engine = exportEngineRef.current!;
       engine.setSettings({
         includeOverlays: true,
         preserveMetadata: options.preserveMetadata,
@@ -440,7 +513,8 @@ export default function App() {
       if (result.success && result.bytes) {
         // Trigger download
         const ext = options.format === "pdf" ? "pdf" : options.format === "jpeg" ? "jpg" : "png";
-        const blob = new Blob([result.bytes], {
+        const extLabel = options.format.toUpperCase();
+        const blob = new Blob([result.bytes as BlobPart], {
           type: options.format === "pdf" ? "application/pdf" : `image/${options.format}`,
         });
         const url = URL.createObjectURL(blob);
@@ -449,172 +523,216 @@ export default function App() {
         a.download = `${doc.name || "export"}.${ext}`;
         a.click();
         URL.revokeObjectURL(url);
+        announce(`Exported successfully as ${extLabel}`);
       }
     } catch (err) {
-      if (process.env.NODE_ENV !== "production") {
-        console.error("Export failed:", err);
-      }
+      const message = err instanceof Error ? err.message : String(err);
+      workspaceErrorHandler.error("Export", `Export failed: ${message}`);
+      announce("Export failed", "assertive");
     }
+  }, [exportEngineRef, announce, workspaceErrorHandler]);
+
+  // ── Menu callbacks ──
+  const handleOpenFile = useCallback(() => {
+    fileInputRef.current?.click();
   }, []);
+
+  const handleToggleSidebar = useCallback(() => {
+    setSidebarVisible((p) => !p);
+    announce(sidebarVisible ? "Sidebar hidden" : "Sidebar shown");
+  }, [sidebarVisible, announce]);
+
+  const handleDocumentProperties = useCallback(() => {
+    if (activeDoc) setPropertiesOpen(true);
+  }, [activeDoc]);
+
+  const handlePreferences = useCallback(() => {
+    setPreferencesOpen(true);
+  }, []);
+
+  const handleAbout = useCallback(() => {
+    setAboutOpen(true);
+  }, []);
+
+  const handleExport = useCallback(() => {
+    if (activeDoc) setExportDialogOpen(true);
+  }, [activeDoc]);
+
+  // ── Zoom / Fit callbacks ──
+  const zoomIn = useCallback(() => setZoomLevel((p) => Math.min(3, +(p + 0.1).toFixed(2))), []);
+  const zoomOut = useCallback(() => setZoomLevel((p) => Math.max(0.5, +(p - 0.1).toFixed(2))), []);
+  const handleFitWidth = useCallback(() => { setFitMode("width"); setZoomLevel(1); }, []);
+  const handleFitPage = useCallback(() => { setFitMode("page"); setZoomLevel(1); }, []);
 
   // ── Empty state ──
   const hasDocuments = documents.length > 0;
-  const showEmptyState = !activePdf;
 
   return (
-    <ErrorProvider>
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        height: "100vh",
+        background: "var(--bg-primary)",
+      }}
+    >
+      {/* Hidden file input */}
+      <input
+        ref={fileInputRef}
+        id="pdf-file-input"
+        type="file"
+        accept="application/pdf,image/png,image/jpeg,image/webp,image/gif,image/bmp,image/svg+xml,image/avif"
+        onChange={handleFileChange}
+        style={{ display: "none" }}
+      />
+
+      {/* Menu Bar */}
+      <MenuBar
+        onOpenFile={handleOpenFile}
+        onToggleCommandPalette={() => setCommandPaletteOpen((p) => !p)}
+        onToggleSidebar={handleToggleSidebar}
+        onToggleInspector={() => {}}
+        onDocumentProperties={handleDocumentProperties}
+        onPreferences={handlePreferences}
+        onAbout={handleAbout}
+        onExport={handleExport}
+      />
+
+      {/* Toolbar — always visible, tools disabled when no document */}
+      <Toolbar
+        zoomLevel={zoomLevel}
+        onZoomIn={zoomIn}
+        onZoomOut={zoomOut}
+        onFitWidth={handleFitWidth}
+        onFitPage={handleFitPage}
+        onOpenFile={() => fileInputRef.current?.click()}
+        disabled={!activePdf}
+      />
+
+      {/* Document Tabs */}
+      {hasDocuments && (
+        <DocumentTabs
+          onNewDocument={() => fileInputRef.current?.click()}
+          onCloseDocument={handleCloseTab}
+        />
+      )}
+
       <div
         style={{
           display: "flex",
-          flexDirection: "column",
-          height: "100vh",
-          background: "#111",
+          flex: 1,
+          overflow: "hidden",
+          position: "relative",
         }}
       >
-        {/* Hidden file input */}
-        <input
-          ref={fileInputRef}
-          id="pdf-file-input"
-          type="file"
-          accept="application/pdf,image/png,image/jpeg,image/webp,image/gif,image/bmp,image/svg+xml,image/avif"
-          onChange={handleFileChange}
-          style={{ display: "none" }}
-        />
+        {/* Sidebar toggle button */}
+        {activePdf && (
+          <button
+            onClick={handleToggleSidebar}
+            style={{
+              position: "absolute",
+              left: sidebarVisible ? 182 : 4,
+              top: 8,
+              zIndex: 50,
+              background: "var(--bg-tertiary)",
+              border: "1px solid var(--border-secondary)",
+              borderRadius: 4,
+              color: "var(--text-muted)",
+              cursor: "pointer",
+              padding: "2px 6px",
+              fontSize: 11,
+              transition: "left 0.2s",
+            }}
+            title={sidebarVisible ? "Hide sidebar" : "Show sidebar"}
+            aria-label={sidebarVisible ? "Hide sidebar" : "Show sidebar"}
+          >
+            {sidebarVisible ? <ChevronLeft size={12} aria-hidden="true" /> : <ChevronRight size={12} aria-hidden="true" />}
+          </button>
+        )}
 
-        {/* Menu Bar */}
-        <MenuBar
-          onOpenFile={handleOpenFile}
-          onToggleCommandPalette={() => setCommandPaletteOpen((p) => !p)}
-          onToggleSidebar={handleToggleSidebar}
-          onToggleInspector={handleToggleInspector}
-          onDocumentProperties={handleDocumentProperties}
-          onPreferences={handlePreferences}
-          onAbout={handleAbout}
-        />
-
-        {/* Document Tabs */}
-        {hasDocuments && (
-          <DocumentTabs
-            onNewDocument={() => fileInputRef.current?.click()}
-            onCloseDocument={handleCloseTab}
+        {/* Sidebar */}
+        {activePdf && sidebarVisible && (
+          <LazyThumbnails
+            pdf={activePdf}
+            onPageClick={handlePageClick}
           />
         )}
 
+        {/* Main content */}
         <div
+          ref={viewerRef}
           style={{
-            display: "flex",
             flex: 1,
-            overflow: "hidden",
-            position: "relative",
+            overflow: "auto",
+            display: "flex",
+            flexDirection: "column",
+            minWidth: 0,
           }}
         >
-          {/* Sidebar toggle button */}
-          {activePdf && (
-            <button
-              onClick={handleToggleSidebar}
-              style={{
-                position: "absolute",
-                left: sidebarVisible ? 182 : 4,
-                top: 8,
-                zIndex: 50,
-                background: "#1e1e1e",
-                border: "1px solid #333",
-                borderRadius: 4,
-                color: "#888",
-                cursor: "pointer",
-                padding: "2px 6px",
-                fontSize: 11,
-                transition: "left 0.2s",
-              }}
-              title={sidebarVisible ? "Hide sidebar" : "Show sidebar"}
-            >
-              {sidebarVisible ? "◀" : "▶"}
-            </button>
-          )}
-
-          {/* Sidebar */}
-          {activePdf && sidebarVisible && (
-            <LazyThumbnails
+          {activePdf ? (
+            <PDFViewer
               pdf={activePdf}
-              activePage={activePage}
-              onPageClick={handlePageClick}
+              zoomLevel={zoomLevel}
+              fitMode={fitMode}
+              onZoomIn={zoomIn}
+              onZoomOut={zoomOut}
+            />
+          ) : (
+            <EmptyState
+              onOpenFile={() => fileInputRef.current?.click()}
+              onNewDocument={() => workspaceManager.newDocument()}
             />
           )}
-
-          {/* Main content */}
-          <div
-            ref={viewerRef}
-            style={{
-              flex: 1,
-              overflow: "auto",
-              display: "flex",
-              flexDirection: "column",
-            }}
-          >
-            {activePdf ? (
-              <PDFViewer
-                pdf={activePdf}
-                sidebarVisible={sidebarVisible}
-                onToggleSidebar={handleToggleSidebar}
-                onOpenPageManager={() => setPageManagerOpen(true)}
-              />
-            ) : (
-              <EmptyState
-                onOpenFile={() => fileInputRef.current?.click()}
-                onNewDocument={() => workspaceManager.newDocument()}
-              />
-            )}
-          </div>
         </div>
-
-        {/* Command Palette */}
-        <CommandPalette
-          isOpen={commandPaletteOpen}
-          onClose={() => setCommandPaletteOpen(false)}
-        />
-
-        {/* Dialogs */}
-        <ConfirmDialog
-          open={confirmClose !== null}
-          title="Unsaved Changes"
-          message={`"${confirmClose?.docName ?? ""}" has unsaved changes. Do you want to save before closing?`}
-          confirmLabel="Save & Close"
-          cancelLabel="Cancel"
-          extraLabel="Discard"
-          variant="warning"
-          onConfirm={handleConfirmClose}
-          onCancel={() => setConfirmClose(null)}
-          onExtra={handleDiscardClose}
-        />
-
-        <DocumentPropertiesDialog
-          open={propertiesOpen}
-          onClose={() => setPropertiesOpen(false)}
-        />
-
-        <PreferencesDialog
-          open={preferencesOpen}
-          onClose={() => setPreferencesOpen(false)}
-        />
-
-        <AboutDialog
-          open={aboutOpen}
-          onClose={() => setAboutOpen(false)}
-        />
-
-        <PageManagerDialog
-          open={pageManagerOpen}
-          onClose={() => setPageManagerOpen(false)}
-        />
-
-        {/* Export Dialog */}
-        <ExportDialog
-          open={exportDialogOpen}
-          onClose={() => setExportDialogOpen(false)}
-          onExport={handleExportStart}
-        />
       </div>
-    </ErrorProvider>
+
+      {/* Command Palette */}
+      <CommandPalette
+        isOpen={commandPaletteOpen}
+        onClose={() => setCommandPaletteOpen(false)}
+      />
+
+      {/* Dialogs */}
+      <ConfirmDialog
+        open={confirmClose !== null}
+        title="Unsaved Changes"
+        message={`"${confirmClose?.docName ?? ""}" has unsaved changes. Do you want to save before closing?`}
+        confirmLabel="Save & Close"
+        cancelLabel="Cancel"
+        extraLabel="Discard"
+        variant="warning"
+        onConfirm={handleConfirmClose}
+        onCancel={() => setConfirmClose(null)}
+        onExtra={handleDiscardClose}
+      />
+
+      <DocumentPropertiesDialog
+        open={propertiesOpen}
+        onClose={() => setPropertiesOpen(false)}
+      />
+
+      <PreferencesDialog
+        open={preferencesOpen}
+        onClose={() => setPreferencesOpen(false)}
+      />
+
+      <AboutDialog
+        open={aboutOpen}
+        onClose={() => setAboutOpen(false)}
+      />
+
+      <PageManagerDialog
+        open={pageManagerOpen}
+        onClose={() => setPageManagerOpen(false)}
+      />
+
+      {/* Export Dialog */}
+      <ExportDialog
+        open={exportDialogOpen}
+        onClose={() => setExportDialogOpen(false)}
+        onExport={handleExportStart}
+      />
+    </div>
   );
 }
 
@@ -636,36 +754,37 @@ function EmptyState({
         alignItems: "center",
         justifyContent: "center",
         height: "100%",
-        color: "#666",
+        color: "var(--text-dim)",
         fontSize: 16,
         gap: 16,
         animation: "fadeIn 0.3s ease",
       }}
       onDragOver={(e) => e.preventDefault()}
     >
-      <span style={{ fontSize: 64, opacity: 0.3 }}>📄</span>
-      <span style={{ color: "#888" }}>Drop a PDF here to get started</span>
+      <FileText size={64} style={{ opacity: 0.3 }} aria-hidden="true" />
+      <span style={{ color: "var(--text-muted)" }}>Drop a PDF here to get started</span>
 
       <div style={{ display: "flex", gap: 12, marginTop: 8 }}>
         <button
           onClick={onOpenFile}
+          className="empty-state-btn"
           style={{
             padding: "10px 24px",
-            border: "1px solid #444",
+            border: "1px solid var(--border-primary)",
             borderRadius: 6,
-            background: "#2a2a2a",
-            color: "#ccc",
+            background: "var(--bg-hover)",
+            color: "var(--text-secondary)",
             cursor: "pointer",
             fontSize: 14,
             transition: "background 0.15s, border-color 0.15s",
           }}
           onMouseEnter={(e) => {
-            (e.target as HTMLElement).style.background = "#333";
-            (e.target as HTMLElement).style.borderColor = "#555";
+            (e.target as HTMLElement).style.background = "var(--bg-active)";
+            (e.target as HTMLElement).style.borderColor = "var(--border-tertiary)";
           }}
           onMouseLeave={(e) => {
-            (e.target as HTMLElement).style.background = "#2a2a2a";
-            (e.target as HTMLElement).style.borderColor = "#444";
+            (e.target as HTMLElement).style.background = "var(--bg-hover)";
+            (e.target as HTMLElement).style.borderColor = "var(--border-primary)";
           }}
         >
           Open PDF
@@ -674,19 +793,21 @@ function EmptyState({
           onClick={onNewDocument}
           style={{
             padding: "10px 24px",
-            border: "1px solid #3a6ea5",
+            border: "1px solid var(--accent)",
             borderRadius: 6,
-            background: "#1a2a3a",
-            color: "#4a9eff",
+            background: "var(--accent-bg)",
+            color: "var(--accent)",
             cursor: "pointer",
             fontSize: 14,
             transition: "background 0.15s",
           }}
           onMouseEnter={(e) => {
-            (e.target as HTMLElement).style.background = "#1e3040";
+            (e.target as HTMLElement).style.background = "var(--accent-bg)";
+            (e.target as HTMLElement).style.filter = "brightness(1.1)";
           }}
           onMouseLeave={(e) => {
-            (e.target as HTMLElement).style.background = "#1a2a3a";
+            (e.target as HTMLElement).style.background = "var(--accent-bg)";
+            (e.target as HTMLElement).style.filter = "none";
           }}
         >
           New Document
@@ -704,7 +825,7 @@ function EmptyState({
         >
           <div
             style={{
-              color: "#555",
+              color: "var(--text-faint)",
               fontSize: 12,
               textTransform: "uppercase",
               letterSpacing: "0.5px",
@@ -725,7 +846,7 @@ function EmptyState({
                 key={entry.path}
                 onClick={onOpenFile}
                 style={{
-                  color: "#777",
+                  color: "var(--text-dim)",
                   fontSize: 13,
                   cursor: "pointer",
                   background: "transparent",
@@ -735,10 +856,10 @@ function EmptyState({
                   transition: "color 0.15s",
                 }}
                 onMouseEnter={(e) => {
-                  (e.target as HTMLElement).style.color = "#aaa";
+                  (e.target as HTMLElement).style.color = "var(--text-muted)";
                 }}
                 onMouseLeave={(e) => {
-                  (e.target as HTMLElement).style.color = "#777";
+                  (e.target as HTMLElement).style.color = "var(--text-dim)";
                 }}
                 title={entry.path}
               >
