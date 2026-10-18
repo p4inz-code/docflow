@@ -1,11 +1,11 @@
-# Docflow V1 — Security Review
+# Docflow V1: security review
 
 > **Version:** 1.0.0-RC  
 > **Date:** July 2026  
 
 ---
 
-## 1. Threat Model
+## 1. Threat model
 
 Docflow is a client-side desktop PDF editor. It operates entirely in the browser/Electron renderer process with no backend server.
 
@@ -15,7 +15,7 @@ Docflow is a client-side desktop PDF editor. It operates entirely in the browser
 
 ---
 
-## 2. Risk Assessment
+## 2. Risk assessment
 
 | Risk | Severity | Likelihood | Mitigation |
 |------|----------|------------|------------|
@@ -28,40 +28,40 @@ Docflow is a client-side desktop PDF editor. It operates entirely in the browser
 
 ---
 
-## 3. Input Validation
+## 3. Input validation
 
-### File Handling
-
-| Input | Validation | Status |
-|-------|------------|--------|
-| PDF files | Extension + MIME type check | ✅ |
-| Image files | Extension + MIME type check | ✅ |
-| Drag-drop files | MIME type filter before processing | ✅ |
-| File paths | No arbitrary path navigation (browser sandboxed) | ✅ |
-
-### Clipboard Handling
+### File handling
 
 | Input | Validation | Status |
 |-------|------------|--------|
-| Image paste | MIME type `image/*` check | ✅ |
-| Text paste | Only intercepted for import (not in input fields) | ✅ |
-| File paste | File type filter applied | ✅ |
+| PDF files | Extension + MIME type check | Yes |
+| Image files | Extension + MIME type check | Yes |
+| Drag-drop files | MIME type filter before processing | Yes |
+| File paths | No arbitrary path navigation (browser sandboxed) | Yes |
+
+### Clipboard handling
+
+| Input | Validation | Status |
+|-------|------------|--------|
+| Image paste | MIME type `image/*` check | Yes |
+| Text paste | Only intercepted for import (not in input fields) | Yes |
+| File paste | File type filter applied | Yes |
 
 ---
 
-## 4. Data Protection
+## 4. Data protection
 
 | Concern | Status | Details |
 |---------|--------|---------|
-| Document data in transit | ✅ N/A | No network transmission |
-| Document data at rest | ✅ N/A | Files opened from local disk |
-| Session data in localStorage | ✅ | No sensitive document content stored |
-| Blob URLs | ✅ | Revoked after use |
-| Canvas data | ✅ | Cleared on document close |
+| Document data in transit | N/A | No network transmission |
+| Document data at rest | N/A | Files opened from local disk |
+| Session data in localStorage | Yes | No sensitive document content stored |
+| Blob URLs | Yes | Revoked after use |
+| Canvas data | Yes | Cleared on document close |
 
 ---
 
-## 5. Dependency Security
+## 5. Dependency security
 
 | Dependency | Version | Known CVEs | Notes |
 |------------|---------|------------|-------|
@@ -70,21 +70,21 @@ Docflow is a client-side desktop PDF editor. It operates entirely in the browser
 | React | 18.x | None critical | Active community |
 | Zustand | Latest | None | Minimal attack surface |
 
-**Audit Command:** `pnpm audit` — Zero vulnerabilities at time of release.
+**Audit Command:** `pnpm audit`, Zero vulnerabilities at time of release.
 
 ---
 
-## 6. Secure Development Practices
+## 6. Secure development practices
 
 | Practice | Status |
 |----------|--------|
-| Strict TypeScript mode | ✅ Enabled |
-| No `eval()` or `Function()` | ✅ Verified |
-| No `innerHTML` in production code | ✅ Canvas-based rendering |
-| CSP headers (Electron) | ✅ Default-src 'self' |
-| No secrets in source code | ✅ Zero API keys or tokens |
-| Input sanitization | ✅ MIME type validation on all file inputs |
-| Error messages (production) | ✅ User-friendly, no stack traces |
+| Strict TypeScript mode | Enabled |
+| No `eval()` or `Function()` | Verified |
+| No `innerHTML` in production code | Canvas-based rendering |
+| CSP headers (Electron) | Default-src 'self' |
+| No secrets in source code | Zero API keys or tokens |
+| Input sanitization | MIME type validation on all file inputs |
+| Error messages (production) | User-friendly, no stack traces |
 
 ---
 
@@ -92,11 +92,11 @@ Docflow is a client-side desktop PDF editor. It operates entirely in the browser
 
 | Concern | Status |
 |---------|--------|
-| Node.js integration | ✅ Disabled in renderer |
-| Context isolation | ✅ Enabled |
-| Sandbox | ✅ Enabled |
-| Remote module | ✅ Disabled |
-| Custom protocol handlers | ⚠️ Not implemented (future) |
+| Node.js integration | Disabled in renderer |
+| Context isolation | Enabled |
+| Sandbox | Enabled |
+| Remote module | Disabled |
+| Custom protocol handlers | Not implemented (future) |
 
 ---
 

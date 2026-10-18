@@ -1,4 +1,4 @@
-# Docflow Command System
+# Docflow command system
 
 ## Architecture
 
@@ -6,7 +6,7 @@ Docflow uses the classic GoF **Command Pattern** for all undoable operations. Ev
 
 ## Components
 
-### Command Interface
+### Command interface
 ```
 {
   id: string           — unique instance ID
@@ -21,7 +21,7 @@ Docflow uses the classic GoF **Command Pattern** for all undoable operations. Ev
 ```
 
 ### CommandManager
-Responsible for executing commands and forwarding results to the HistoryManager. The CommandManager doesn't know about history — it just runs commands and notifies listeners.
+Responsible for executing commands and forwarding results to the HistoryManager. The CommandManager doesn't know about history. It just runs commands and notifies listeners.
 
 ### HistoryManager
 Maintains undo/redo stacks. When a command is executed:
@@ -37,7 +37,7 @@ The bridge between Command execution and History tracking:
 - Tracks dirty state based on history depth
 - Notifies editor store on history changes
 
-## Concrete Commands
+## Concrete commands
 
 | Command | Type | Description |
 |---------|------|-------------|
@@ -65,11 +65,11 @@ Every command returns a `CommandResult` describing what changed:
 }
 ```
 
-## Menu & Palette Integration
+## Menu & palette integration
 
 All menu actions and command palette entries route through the CommandPipeline:
-- **MenuBar** builds menu definitions that call `commandPipeline.execute()` etc.
-- **CommandPalette** builds command entries with the same actions
-- **KeyboardShortcuts** handles keyboard bindings that execute identical commands
+- MenuBar builds menu definitions that call `commandPipeline.execute()` etc.
+- CommandPalette builds command entries with the same actions
+- KeyboardShortcuts handles keyboard bindings that execute identical commands
 
-This ensures no duplicated logic — the same Command instance handles menu, palette, and keyboard triggers.
+This ensures no duplicated logic. The same Command instance handles menu, palette, and keyboard triggers.

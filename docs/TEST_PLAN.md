@@ -1,11 +1,11 @@
-# Docflow V1 — Test Plan
+# Docflow V1: test plan
 
 ## Test Scope
 This test plan covers all core functionality of Docflow V1. Tests are organized by subsystem.
 
-## 1. Workspace Tests
+## 1. Workspace tests
 
-### 1.1 Document Tabs
+### 1.1 Document tabs
 | Test | Steps | Expected |
 |------|-------|----------|
 | Open document | Click Open, select PDF | Document opens in new tab |
@@ -19,7 +19,7 @@ This test plan covers all core functionality of Docflow V1. Tests are organized 
 | Ctrl+Shift+Tab | Press Ctrl+Shift+Tab | Previous tab activates |
 | Context menu | Right-click tab | Close, Close Others, Close All |
 
-### 1.2 File Lifecycle
+### 1.2 File lifecycle
 | Test | Steps | Expected |
 |------|-------|----------|
 | New Document | File > New | Blank untitled document created |
@@ -30,7 +30,7 @@ This test plan covers all core functionality of Docflow V1. Tests are organized 
 | Close All | Right-click > Close All | All tabs closed |
 | Drop PDF | Drag PDF onto window | Document opens in new tab |
 
-## 2. PDF Viewing Tests
+## 2. PDF viewing tests
 
 ### 2.1 Rendering
 | Test | Steps | Expected |
@@ -63,7 +63,7 @@ This test plan covers all core functionality of Docflow V1. Tests are organized 
 | Navigation | Click Prev/Next | Scrolls to match |
 | No results | Type gibberish | "No results found" shown |
 
-## 3. Editing Tests
+## 3. Editing tests
 
 ### 3.1 Tools
 | Test | Steps | Expected |
@@ -77,7 +77,7 @@ This test plan covers all core functionality of Docflow V1. Tests are organized 
 | Highlight tool | Press U | Highlight mode active |
 | Erase tool | Press E | Erase mode active |
 
-### 3.2 Object Manipulation
+### 3.2 Object manipulation
 | Test | Steps | Expected |
 |------|-------|----------|
 | Select | Click object | Object highlighted with handles |
@@ -93,7 +93,7 @@ This test plan covers all core functionality of Docflow V1. Tests are organized 
 | Nudge | Arrow keys | Object moves 1px |
 | Nudge 10px | Shift+arrow | Object moves 10px |
 
-## 4. UI Tests
+## 4. UI tests
 
 ### 4.1 Menus
 | Test | Steps | Expected |
@@ -104,7 +104,7 @@ This test plan covers all core functionality of Docflow V1. Tests are organized 
 | Disabled items | Check grayed items | Not clickable |
 | Shortcuts | Verify shortcut text | Shown next to items |
 
-### 4.2 Command Palette
+### 4.2 Command palette
 | Test | Steps | Expected |
 |------|-------|----------|
 | Open | Ctrl+Shift+P | Palette opens |
@@ -122,7 +122,7 @@ This test plan covers all core functionality of Docflow V1. Tests are organized 
 | Close button | Click X | Dialog closes |
 | Overlay click | Click outside dialog | Dialog closes |
 
-## 5. Export Tests
+## 5. Export tests
 | Test | Steps | Expected |
 |------|-------|----------|
 | Export dialog | File > Export | Export dialog opens |
@@ -131,7 +131,7 @@ This test plan covers all core functionality of Docflow V1. Tests are organized 
 | DPI selection | Choose DPI | Resolution applied |
 | Cancel | Click Cancel | Dialog closes, no export |
 
-## 6. Performance Tests
+## 6. Performance tests
 | Test | Steps | Expected |
 |------|-------|----------|
 | Large document | Open 500-page PDF | < 30s to open |

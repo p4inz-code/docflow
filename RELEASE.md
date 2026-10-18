@@ -1,4 +1,4 @@
-# Release Process
+# Release process
 
 ## Version Bumping
 
@@ -18,7 +18,7 @@ pnpm build       # Must succeed
 pnpm lint        # Must pass (warnings OK, errors not OK)
 ```
 
-## Release Types
+## Release types
 
 ### Release Candidate (`rc`)
 - Feature-complete, undergoing testing
@@ -28,7 +28,7 @@ pnpm lint        # Must pass (warnings OK, errors not OK)
 - Fully tested and production-ready
 - Published on the `latest` npm tag (future)
 
-## Hotfix Process
+## Hotfix process
 
 1. Create a branch from the release tag
 2. Apply the fix

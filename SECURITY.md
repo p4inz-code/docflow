@@ -1,12 +1,12 @@
 # Security Policy
 
-## Supported Versions
+## Supported versions
 
 | Version | Supported          |
 |---------|--------------------|
-| 1.0.x   | ✅ Active development |
+| 1.0.x   | Active development |
 
-## Reporting a Vulnerability
+## Reporting a vulnerability
 
 Docflow is a client-side PDF editor that processes documents entirely in the browser. No document data is transmitted over the network.
 
@@ -23,7 +23,7 @@ We will acknowledge receipt within 48 hours and provide a timeline for the fix.
 
 ## Security Considerations
 
-- Docflow runs entirely client-side — no document data leaves your machine
+- Docflow runs entirely client-side: no document data leaves your machine
 - PDFs are rendered via Mozilla's pdf.js in a sandboxed environment
 - Images imported via clipboard or drag-drop are validated by MIME type
 - No API keys, tokens, or secrets are stored

@@ -1,6 +1,6 @@
-# Docflow V1 — Architecture Overview
+# Docflow V1: architecture Overview
 
-## System Architecture
+## System architecture
 
 Docflow is a single-page application (SPA) built with React, TypeScript, and Zustand for state management. It uses pdfjs-dist for PDF rendering and pdf-lib for PDF manipulation.
 
@@ -22,32 +22,32 @@ Docflow is a single-page application (SPA) built with React, TypeScript, and Zus
 └─────────────────────────────────────────────┘
 ```
 
-## Core Subsystems
+## Core subsystems
 
-### 1. Workspace (Multi-Document)
-- **WorkspaceStore** (Zustand): Manages open documents, active tab, dirty state
-- **WorkspaceManager**: High-level API for open/save/close lifecycle
-- **TabManager**: Keyboard navigation (Ctrl+Tab) and drag-reorder
-- **RecentWorkspace**: Session persistence to localStorage
+### 1. Workspace (multi-document)
+- WorkspaceStore (Zustand): Manages open documents, active tab, dirty state
+- WorkspaceManager: High-level API for open/save/close lifecycle
+- TabManager: Keyboard navigation (Ctrl+Tab) and drag-reorder
+- RecentWorkspace: Session persistence to localStorage
 
-### 2. Rendering Engine
-- **RenderingManager**: Central coordinator for overlay rendering
-- **ObjectRenderer** interface: Per-type renderers (Text, Image, Shape, etc.)
-- **DirtyTracker**: Change detection for efficient re-renders
-- **RenderScheduler**: Batched re-render scheduling
+### 2. Rendering engine
+- RenderingManager: Central coordinator for overlay rendering
+- ObjectRenderer interface: Per-type renderers (Text, Image, Shape, etc.)
+- DirtyTracker: Change detection for efficient re-renders
+- RenderScheduler: Batched re-render scheduling
 
-### 3. Editing Engine
-- **CommandPipeline**: Wires CommandManager → HistoryManager
-- **CommandManager**: Executes commands, notifies history
-- **HistoryManager**: Undo/redo stacks with configurable depth
-- **Commands**: 10 command types (Create, Move, Delete, Resize, etc.)
+### 3. Editing engine
+- CommandPipeline: Wires CommandManager → HistoryManager
+- CommandManager: Executes commands, notifies history
+- HistoryManager: Undo/redo stacks with configurable depth
+- Commands: 10 command types (Create, Move, Delete, Resize, etc.)
 
-### 4. Tool System
-- **ToolManager**: Registry and lifecycle for editing tools
-- **10 tools**: Select, Hand, Text, Image, Shape, Draw, Highlight, Signature, Stamp, Erase
-- **InteractionManager**: Normalizes DOM events → routes to active tool
+### 4. Tool system
+- ToolManager: Registry and lifecycle for editing tools
+- 10 tools: Select, Hand, Text, Image, Shape, Draw, Highlight, Signature, Stamp, Erase
+- InteractionManager: Normalizes DOM events → routes to active tool
 
-### 5. Export Pipeline
+### 5. Export pipeline
 ```
 User → ExportDialog → ExportEngine
   ├── Validator (pre-flight checks)
@@ -59,7 +59,7 @@ User → ExportDialog → ExportEngine
   └── ProgressReporter (progress callbacks)
 ```
 
-### 6. Import Pipeline
+### 6. Import pipeline
 ```
 User → File/Clipboard/Drag → ImportEngine
   ├── ImageImport (data URL conversion)
@@ -69,7 +69,7 @@ User → File/Clipboard/Drag → ImportEngine
   └── Validation (type checking, corruption detection)
 ```
 
-### 7. History Flow
+### 7. History flow
 ```
 User Action → Tool → Command → CommandPipeline
   ├── CommandManager.execute(cmd)
@@ -78,7 +78,7 @@ User Action → Tool → Command → CommandPipeline
        └── Redo: HistoryManager.redo() → cmd.execute()
 ```
 
-### 8. Recovery Flow
+### 8. Recovery flow
 ```
 App Start → RecoveryManager.checkForStaleSessions()
   ├── If found → Show recovery dialog
@@ -87,15 +87,15 @@ App Start → RecoveryManager.checkForStaleSessions()
   └── If clear → Start fresh
 ```
 
-## Key Design Decisions
+## Key design decisions
 
-1. **Command Pattern**: Every user action is an undoable command
-2. **Zustand over Redux**: Simpler API, less boilerplate, built-in selectors
-3. **pdf-lib for export**: Full-featured PDF manipulation without heavy dependencies
-4. **ContentEditable for text**: Inline text editing without a separate editor
-5. **Data URLs for images**: Simplifies serialization and clipboard support
+1. Command Pattern: Every user action is an undoable command
+2. Zustand over Redux: Simpler API, less boilerplate, built-in selectors
+3. pdf-lib for export: Full-featured PDF manipulation without heavy dependencies
+4. ContentEditable for text: Inline text editing without a separate editor
+5. Data URLs for images: Simplifies serialization and clipboard support
 
-## Data Flow
+## Data flow
 
 ```
 User Interaction → Tool.onPointerDown/Move/Up

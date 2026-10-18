@@ -1,11 +1,11 @@
-# Docflow Engineering Standards
+# Docflow engineering standards
 
-> Repository law — Permanent engineering rules extracted from release hardening sessions.
+> Repository law, Permanent engineering rules extracted from release hardening sessions.
 > Every engineer must read and follow these standards before contributing.
 
 ---
 
-## 1. Resource Lifecycle
+## 1. Resource lifecycle
 
 ### Rule R1: Every resource must have an owner
 
@@ -24,9 +24,9 @@ Every `setInterval`, `setTimeout`, `requestAnimationFrame`, `AbortController`, e
 ### Rule R2: Every resource must have deterministic cleanup
 
 Every class that allocates resources must implement one of:
-- `dispose()` — for imperative cleanup
-- `destroy()` — for imperative cleanup (legacy compatibility)
-- A React `useEffect` cleanup function — for component-scoped resources
+- `dispose()`: for imperative cleanup
+- `destroy()`: for imperative cleanup (legacy compatibility)
+- A React `useEffect` cleanup function, for component-scoped resources
 
 Example:
 ```typescript
@@ -83,7 +83,7 @@ observer.observe(element);
 observer.disconnect();
 ```
 
-## 2. Error Handling
+## 2. Error handling
 
 ### Rule E1: Every error must route through GlobalErrorManager
 
@@ -150,14 +150,14 @@ async save(): Promise<void> {
 
 Every operation that modifies persistent state (save, export, import) must guard against concurrent execution.
 
-## 3. State Management
+## 3. State management
 
 ### Rule S1: Single source of truth
 
 Every piece of state must exist in exactly one location:
-- **Zustand store** for cross-component shared state
-- **React local state** for component-private UI state
-- **Ref** for mutable values that don't trigger re-renders
+- Zustand store for cross-component shared state
+- React local state for component-private UI state
+- Ref for mutable values that don't trigger re-renders
 
 **Do NOT** duplicate the same state in multiple locations.
 
@@ -224,7 +224,7 @@ After fixing a bug, answer these questions in the PR:
 2. What prevents recurrence?
 3. Is there a test covering this scenario?
 
-## 6. Build & Validation
+## 6. Build & validation
 
 ### Rule B1: Fresh clone validation
 
@@ -276,7 +276,7 @@ Before closing a file, verify:
 - [ ] Every `as any` cast is justified
 - [ ] No stale `// TODO`, `// FIXME`, `// HACK` comments
 
-## 8. File Deletion Protocol
+## 8. File Deletion protocol
 
 Before deleting any file:
 1. Search the entire repository for imports of this file
@@ -284,7 +284,7 @@ Before deleting any file:
 3. Verify the build still passes
 4. Run the full test suite
 
-## 9. Adding New Manager Classes
+## 9. Adding new manager classes
 
 Every new manager class must document:
 - What resources it allocates

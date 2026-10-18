@@ -1,11 +1,11 @@
-# Docflow V1.0.0 — Release Notes
+# Docflow V1.0.0: release notes
 
 ## Overview
 Docflow is a professional PDF editing workspace built for modern browsers and Electron. V1 delivers a complete multi-document PDF editor with annotation tools, export pipeline, and a polished desktop UI.
 
-## New Features
+## New features
 
-### Multi-Document Workspace
+### Multi-Document workspace
 - Open multiple PDF documents in tabs
 - Closable tabs with dirty indicators (*)
 - Drag-to-reorder tabs
@@ -14,7 +14,7 @@ Docflow is a professional PDF editing workspace built for modern browsers and El
 - Unsaved document warning on close
 - Session persistence across restarts
 
-### PDF Viewing & Navigation
+### PDF viewing & navigation
 - High-quality PDF rendering via pdfjs-dist
 - Multi-page document support
 - Smooth zoom (50%–300%) with Ctrl+scroll
@@ -23,7 +23,7 @@ Docflow is a professional PDF editing workspace built for modern browsers and El
 - Lazy-loading page thumbnails with context menu
 - Full-text search with case/whole-word options
 
-### Editing Engine
+### Editing engine
 - 10 editing tools: Select, Hand, Text, Image, Shape, Draw, Highlight, Signature, Stamp, Erase
 - Object manipulation: move, resize, rotate, delete
 - Clipboard: copy, cut, paste, duplicate
@@ -31,7 +31,7 @@ Docflow is a professional PDF editing workspace built for modern browsers and El
 - Smart guides for alignment
 - Inline text editing with contentEditable
 
-### Image Support
+### Image support
 - Import PNG, JPEG, WebP images
 - Image editing controls (size, rotation, flip, opacity)
 - Aspect ratio lock during resize
@@ -54,7 +54,7 @@ Docflow is a professional PDF editing workspace built for modern browsers and El
 - Skeleton loading states
 - Empty state with recent files
 
-### Export & Save
+### Export & save
 - Save / Save As workflow
 - Export dialog with format, range, DPI options
 - Flatten annotations and forms on export
@@ -70,9 +70,9 @@ Docflow is a professional PDF editing workspace built for modern browsers and El
 - Reduced motion mode
 - Large UI mode
 
-## Known Issues
+## Known issues
 
-### Browser Limitations
+### Browser limitations
 - File system access limited in browser mode (full support requires Electron)
 - Save only works as download in browser (no overwrite)
 - Open recent from file path not available in browser
@@ -95,7 +95,7 @@ Docflow is a professional PDF editing workspace built for modern browsers and El
 - JavaScript enabled
 - WebAssembly support (for pdfjs-dist)
 
-### Electron (Desktop)
+### Electron (desktop)
 - Windows 10+, macOS 12+, Ubuntu 20.04+
 - 4GB RAM minimum (8GB recommended)
 - 100MB disk space

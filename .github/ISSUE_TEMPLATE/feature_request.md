@@ -15,14 +15,14 @@ Ex. "I'm always frustrated when [...]"
 
 A clear and concise description of what you want to happen.
 
-## Alternative Solutions
+## Alternative solutions
 
 A clear and concise description of any alternative solutions or features you've considered.
 
-## Target Users
+## Target users
 
 Who would benefit from this feature? (e.g., PDF editors, developers, designers)
 
-## Additional Context
+## Additional context
 
 Add any other context, mockups, or examples of similar features in other applications.

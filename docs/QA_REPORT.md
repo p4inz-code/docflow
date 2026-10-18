@@ -1,4 +1,4 @@
-# Docflow V1 — QA Report
+# Docflow V1: QA report
 
 > **Version:** 1.0.0-RC  
 > **Date:** July 2026  
@@ -6,9 +6,9 @@
 
 ---
 
-## 1. Executive Summary
+## 1. Executive summary
 
-Docflow V1 has undergone comprehensive quality assurance across all subsystems. The application is functionally complete with no known critical or high-severity defects. All core workflows — opening, editing, saving, exporting PDFs with overlays — are operational and stable.
+Docflow V1 has undergone comprehensive quality assurance across all subsystems. The application is functionally complete with no known critical or high-severity defects. All core workflows, opening, editing, saving, exporting PDFs with overlays, are operational and stable.
 
 **Overall QA Score: 89/100**
 
@@ -24,97 +24,97 @@ Docflow V1 has undergone comprehensive quality assurance across all subsystems. 
 
 ---
 
-## 2. Test Coverage
+## 2. Test coverage
 
-### 2.1 Unit Tests
+### 2.1 Unit tests
 
 | Module | Coverage | Status |
 |--------|----------|--------|
-| ExportEngine | Core paths tested | ✅ Passing |
-| CommandPipeline | Architecture validated | ✅ Passing |
-| HistoryManager | Architecture validated | ✅ Passing |
-| FileSerializer | Architecture validated | ⚠️ Manual |
-| FileDeserializer | Architecture validated | ⚠️ Manual |
+| ExportEngine | Core paths tested | Passing |
+| CommandPipeline | Architecture validated | Passing |
+| HistoryManager | Architecture validated | Passing |
+| FileSerializer | Architecture validated | Manual |
+| FileDeserializer | Architecture validated | Manual |
 
-### 2.2 Integration Testing
+### 2.2 Integration testing
 
 | Workflow | Status | Notes |
 |----------|--------|-------|
-| Open PDF | ✅ Passing | Loads via pdf.js, renders to canvas |
-| Create overlay objects | ✅ Passing | All 10 tools functional |
-| Undo/Redo | ✅ Passing | CommandPipeline routes all mutations |
-| Export with overlays | ✅ Passing | PDF, PNG, JPEG formats |
-| Import images | ✅ Passing | Drag-drop and clipboard |
-| Autosave | ✅ Passing | Interval-based, configurable |
-| Workspace restore | ✅ Passing | Session persistence via localStorage |
-| Search | ✅ Passing | Text search within PDF |
-| Clipboard | ✅ Passing | Copy/paste objects between pages |
+| Open PDF | Passing | Loads via pdf.js, renders to canvas |
+| Create overlay objects | Passing | All 10 tools functional |
+| Undo/Redo | Passing | CommandPipeline routes all mutations |
+| Export with overlays | Passing | PDF, PNG, JPEG formats |
+| Import images | Passing | Drag-drop and clipboard |
+| Autosave | Passing | Interval-based, configurable |
+| Workspace restore | Passing | Session persistence via localStorage |
+| Search | Passing | Text search within PDF |
+| Clipboard | Passing | Copy/paste objects between pages |
 
 ---
 
-## 3. Known Issues
+## 3. Known issues
 
-### Medium Severity
+### Medium severity
 
-1. **PDF thumbnails re-render on zoom change**  
+1. PDF thumbnails re-render on zoom change  
    - *Impact:* Performance overhead on rapid zoom
    - *Fix:* Debounce thumbnail re-renders or use cached renders
    - *Blocks V1:* No
 
-2. **Export progress not shown in UI**  
+2. Export progress not shown in UI  
    - *Impact:* No visual feedback during large exports
    - *Fix:* Wire ExportEngine progress callbacks to StatusBar
    - *Blocks V1:* No
 
-3. **Console.log guarded but present in development**  
+3. Console.log guarded but present in development  
    - *Impact:* Development-only, no production impact
    - *Fix:* Already guarded with `process.env.NODE_ENV`
    - *Blocks V1:* No
 
-### Low Severity
+### Low severity
 
-4. **No keyboard shortcut for "Save As" in MenuBar**  
+4. No keyboard shortcut for "Save As" in MenuBar  
    - *Impact:* Minor UX friction
    - *Fix:* Add Ctrl+Shift+S shortcut display
    - *Blocks V1:* No
 
-5. **Empty state not fully styled for dark mode**  
+5. Empty state not fully styled for dark mode  
    - *Impact:* Minor visual inconsistency
    - *Fix:* Add proper CSS variables
    - *Blocks V1:* No
 
 ---
 
-## 4. Regression Test Results
+## 4. Regression test results
 
 | Feature | Pre-Change | Post-Change | Status |
 |---------|------------|-------------|--------|
-| Open PDF | ✅ | ✅ | No regression |
-| Create text object | ✅ | ✅ | No regression |
-| Undo text creation | ✅ | ✅ | No regression |
-| Export PDF | ✅ | ✅ | No regression |
-| Drag-drop import | ✅ | ✅ | No regression |
-| Search text | ✅ | ✅ | No regression |
-| Workspace tabs | ✅ | ✅ | No regression |
-| Keyboard shortcuts | ✅ | ✅ | No regression |
-| Context menu | ✅ | ✅ | No regression |
-| Inspector panel | ✅ | ✅ | No regression |
+| Open PDF | Yes | Yes | No regression |
+| Create text object | Yes | Yes | No regression |
+| Undo text creation | Yes | Yes | No regression |
+| Export PDF | Yes | Yes | No regression |
+| Drag-drop import | Yes | Yes | No regression |
+| Search text | Yes | Yes | No regression |
+| Workspace tabs | Yes | Yes | No regression |
+| Keyboard shortcuts | Yes | Yes | No regression |
+| Context menu | Yes | Yes | No regression |
+| Inspector panel | Yes | Yes | No regression |
 
 ---
 
-## 5. Browser/Environment Compatibility
+## 5. Browser/Environment compatibility
 
 | Platform | Status | Notes |
 |----------|--------|-------|
-| Chrome 125+ | ✅ | Primary target |
-| Edge 125+ | ✅ | Chromium-based |
-| Electron 30+ | ✅ | Desktop app target |
-| Firefox | ✅ | Full support |
-| Safari | ⚠️ | Minor CSS differences |
+| Chrome 125+ | Yes | Primary target |
+| Edge 125+ | Yes | Chromium-based |
+| Electron 30+ | Yes | Desktop app target |
+| Firefox | Yes | Full support |
+| Safari | | Minor CSS differences |
 
 ---
 
-## 6. Stress Testing
+## 6. Stress testing
 
 | Test | Load | Result |
 |------|------|--------|

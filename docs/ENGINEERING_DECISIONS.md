@@ -1,19 +1,19 @@
-# Docflow — Engineering Decisions
+# Docflow: engineering decisions
 
-## 1. Zustand Over Redux
+## 1. Zustand over Redux
 
 **Decision**: Use Zustand for state management instead of Redux or Context API.
 
 **Rationale**:
-- Minimal boilerplate — no action creators, reducers, or dispatch
+- Minimal boilerplate: no action creators, reducers, or dispatch
 - Direct store access outside React (`useEditorStore.getState()`) makes it easy to read/write state from non-React code (event handlers, command pipeline)
 - Built-in subscription model with fine-grained selectors prevents unnecessary re-renders
-- Simple API — `create()` with a single function
+- Simple API: `create()` with a single function
 - No provider wrapping needed at the app root
 
 **Trade-off**: Loses Redux DevTools middleware. We use a custom `incrementHistoryVersion()` mechanism for reactive undo/redo buttons instead.
 
-## 2. Command Pattern for Undo/Redo
+## 2. Command pattern for undo/Redo
 
 **Decision**: Implement the GoF Command pattern for all undoable operations.
 
@@ -25,29 +25,29 @@
 
 **Trade-off**: More initial code than a simpler memento-based approach. But commands are more flexible for future features like macros and collaboration.
 
-## 3. Direct DOM Manipulation for PDF Rendering
+## 3. Direct DOM manipulation for PDF rendering
 
 **Decision**: Render PDF pages directly to canvas elements via pdfjs-dist, bypassing React's virtual DOM for the page content.
 
 **Rationale**:
-- pdfjs-dist renders to canvas natively — React can't virtualize canvas rendering
+- pdfjs-dist renders to canvas natively, React can't virtualize canvas rendering
 - Direct DOM access for page wrappers allows efficient page-level operations (rotation, visibility)
 - Performance: thousands of canvas pixels don't need to go through React's reconciliation
 
 **Trade-off**: Some manual DOM management (cleanup, event handlers) that React would normally handle. We use `useEffect` cleanup functions to manage this.
 
-## 4. Singleton Managers
+## 4. Singleton managers
 
 **Decision**: Export singleton instances of core managers (commandPipeline, workspaceManager, clipboardManager, keyboardShortcuts).
 
 **Rationale**:
 - These are application-level services with a single instance
 - Singletons allow non-React code (event handlers, command callbacks) to access services without dependency injection
-- Simplifies the mental model — there's only one command pipeline, one workspace manager
+- Simplifies the mental model: there's only one command pipeline, one workspace manager
 
 **Trade-off**: Harder to test than dependency-injected services. In tests, we can reset singleton state through exposed methods.
 
-## 5. Custom Menu Bar vs Native Electron Menu
+## 5. Custom menu bar vs native Electron menu
 
 **Decision**: Implement menus as custom HTML/React components rather than using Electron's native Menu API.
 
@@ -59,9 +59,9 @@
 
 **Trade-off**: Loses OS-level integration (macOS menu bar, system shortcuts, screen reader integration). Future V2 may add native menu support alongside the custom menus.
 
-## 6. WorkspaceStore + EditorStore Separation
+## 6. WorkspaceStore + EditorStore separation
 
-**Decision**: Maintain two separate Zustand stores — WorkspaceStore for document-level state and EditorStore for editing-level state.
+**Decision**: Maintain two separate Zustand stores, WorkspaceStore for document-level state and EditorStore for editing-level state.
 
 **Rationale**:
 - Clear separation of concerns: workspace manages tabs/documents, editor manages tools/selection/objects
@@ -71,7 +71,7 @@
 
 **Trade-off**: More boilerplate for cross-store synchronization (dirty state, active page). We use explicit `switchToDocument()` logic to sync between stores.
 
-## 7. Overlay Rendering Separate from PDF
+## 7. Overlay rendering separate from PDF
 
 **Decision**: Render editable overlays (text, shapes, images) in a separate layer on top of the PDF canvas rather than flattening them into the PDF at render time.
 

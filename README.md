@@ -1,6 +1,6 @@
 <div align="center">
   <br />
-  <h1>📄 Docflow</h1>
+  <h1>Docflow</h1>
   <p>
     <strong>A professional PDF editing workspace for the modern web.</strong>
   </p>
@@ -32,19 +32,19 @@
 
 Docflow is a **feature-complete PDF editing application** that runs entirely in the browser. It provides professional-grade document viewing, annotation, and editing capabilities with a clean, dark-themed interface.
 
-**Why Docflow?** Most PDF editors are either heavy desktop applications or limited web tools. Docflow combines the accessibility of a web app with the power of a desktop editor — all running client-side with zero server dependencies.
+**Why Docflow?** Most PDF editors are either heavy desktop applications or limited web tools. Docflow combines the accessibility of a web app with the power of a desktop editor. All running client-side with zero server dependencies.
 
 ---
 
 ## Features
 
-### 📖 Document Management
+### Document management
 - Open PDF files via file picker, drag-and-drop, or recent files
 - Multi-document workspace with tabbed interface
-- Session persistence — automatically restore your workspace
+- Session persistence: automatically restore your workspace
 - Autosave with configurable intervals
 
-### ✏️ Full Editing Toolset
+### Full editing toolset
 | Tool | Shortcut | Purpose |
 |------|----------|---------|
 | Select | `V` | Select, move, resize, rotate objects |
@@ -58,7 +58,7 @@ Docflow is a **feature-complete PDF editing application** that runs entirely in 
 | Stamp | `P` | Add pre-built stamp annotations |
 | Erase | `E` | Remove annotations |
 
-### 🎨 Professional Editing
+### Professional editing
 - Object selection, move, resize, and rotation
 - Undo/redo with full command history
 - Clipboard support (copy, cut, paste, duplicate)
@@ -66,14 +66,14 @@ Docflow is a **feature-complete PDF editing application** that runs entirely in 
 - Property inspector panel
 - Search within documents
 
-### 📤 Export
+### Export
 - Export to PDF with overlay flattening
 - Export to PNG and JPEG
 - Custom page ranges
 - Metadata preservation
 - Compression optimization
 
-### ⌨️ Keyboard-First
+### ⌨Keyboard-First
 - Full keyboard shortcut system
 - Command palette (Ctrl+Shift+P)
 - Ctrl+Tab document switching
@@ -81,11 +81,11 @@ Docflow is a **feature-complete PDF editing application** that runs entirely in 
 
 ---
 
-## Quick Start
+## Quick start
 
 ### Prerequisites
-- **Node.js** >= 22.12.x
-- **pnpm** >= 11.x (or use `corepack enable && corepack install`)
+- Node.js >= 22.12.x
+- pnpm >= 11.x (or use `corepack enable && corepack install`)
 
 > The project includes a `packageManager` field in `package.json`. If you have [corepack](https://nodejs.org/api/corepack.html) enabled, the correct pnpm version will be selected automatically.
 
@@ -104,7 +104,7 @@ pnpm dev
 
 Open http://localhost:5173 in your browser. Drop a PDF to get started.
 
-### Production Build
+### Production build
 
 ```bash
 pnpm build
@@ -114,16 +114,16 @@ Output is in `apps/renderer/dist/`.
 
 ---
 
-## Technology Stack
+## Technology stack
 
 | Layer | Technology |
 |-------|-----------|
-| **UI Framework** | React 19 with TypeScript |
-| **Build System** | Vite 8 |
-| **State Management** | Zustand 5 |
-| **PDF Rendering** | pdf.js (Mozilla) |
-| **PDF Generation** | pdf-lib |
-| **Linting** | oxlint |
+| UI Framework | React 19 with TypeScript |
+| Build System | Vite 8 |
+| State Management | Zustand 5 |
+| PDF Rendering | pdf.js (Mozilla) |
+| PDF Generation | pdf-lib |
+| Linting | oxlint |
 
 ### Architecture
 
@@ -144,14 +144,14 @@ apps/renderer/src/
 ```
 
 **Design Philosophy:**
-- All mutations go through the **CommandPipeline** for full undo/redo
-- **Zustand** selectors with shallow equality for minimal re-renders
-- **Canvas** for PDF page rendering, **DOM** for overlay annotations
-- All errors route through **GlobalErrorManager** for structured handling
+- All mutations go through the CommandPipeline for full undo/redo
+- Zustand selectors with shallow equality for minimal re-renders
+- Canvas for PDF page rendering, DOM for overlay annotations
+- All errors route through GlobalErrorManager for structured handling
 
 ---
 
-## Keyboard Shortcuts
+## Keyboard shortcuts
 
 | Shortcut | Action |
 |----------|--------|
@@ -177,19 +177,19 @@ apps/renderer/src/
 
 ---
 
-## Project Status
+## Project status
 
 Docflow is at **v1.0.0-rc.1** (Release Candidate). The application is feature-complete and production-hardened:
 
-- ✅ Zero TypeScript errors (strict mode)
-- ✅ Zero `as any` casts in production code
-- ✅ All console output production-guarded
-- ✅ Comprehensive ARIA accessibility
-- ✅ Structured error handling
-- ✅ Production build succeeds
-- ⚠️ Awaiting community testing before v1.0.0 stable
+- Zero TypeScript errors (strict mode)
+- Zero `as any` casts in production code
+- All console output production-guarded
+- Comprehensive ARIA accessibility
+- Structured error handling
+- Production build succeeds
+- Awaiting community testing before v1.0.0 stable
 
-### Known Limitations
+### Known limitations
 - Electron desktop shell not yet integrated
 - No per-subsystem error boundaries (global only)
 - Limited unit test coverage
@@ -216,8 +216,8 @@ Docflow is at **v1.0.0-rc.1** (Release Candidate). The application is feature-co
 Contributions are welcome! Please see the [Contributing Guide](docs/CONTRIBUTING.md) for details.
 
 Before submitting a PR:
-1. Run `pnpm typecheck` — must pass with zero errors
-2. Run `pnpm build` — must succeed
+1. Run `pnpm typecheck`: must pass with zero errors
+2. Run `pnpm build`: must succeed
 3. Ensure no `console.*` in production code
 
 ---
@@ -229,7 +229,7 @@ MIT © 2026 Docflow. See [LICENSE](LICENSE) for details.
 ---
 
 <div align="center">
-  <sub>Built with ❤️ for the open-source community</sub>
+  <sub>Built with for the open-source community</sub>
 </div>
 
 ---

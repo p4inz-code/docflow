@@ -10,7 +10,7 @@ assignees: ''
 
 A clear and concise description of the bug.
 
-## Steps to Reproduce
+## Steps to reproduce
 
 1. Open '...'
 2. Click on '...'
@@ -25,7 +25,7 @@ A clear description of what you expected to happen.
 
 What actually happened.
 
-## Screenshots / Screen Recordings
+## Screenshots / screen Recordings
 
 If applicable, add screenshots to help explain the issue.
 
@@ -35,6 +35,6 @@ If applicable, add screenshots to help explain the issue.
 - Browser: [e.g. Chrome 125, Edge 125, Firefox 130]
 - Version: [e.g. 1.0.0-rc.1]
 
-## Additional Context
+## Additional context
 
 Add any other context about the problem here.

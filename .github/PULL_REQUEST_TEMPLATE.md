@@ -4,7 +4,7 @@ Please include a summary of the change and which issue is fixed.
 
 Fixes #(issue)
 
-## Type of Change
+## Type of change
 
 - [ ] Bug fix (non-breaking change that fixes an issue)
 - [ ] New feature (non-breaking change that adds functionality)

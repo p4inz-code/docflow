@@ -1,8 +1,8 @@
-# Docflow V1 — Release Checklist
+# Docflow V1: release Checklist
 
-## Pre-Release Verification
+## Pre-Release verification
 
-### Build & Type Safety
+### Build & type safety
 - [x] TypeScript compiles with 0 errors (`tsc --noEmit`)
 - [ ] Vite build succeeds (`vite build`)
 - [ ] No `any` type casts in production code
@@ -68,7 +68,7 @@
 - [ ] High contrast mode tested
 - [ ] Reduced motion mode tested
 
-## Release Steps
+## Release steps
 
 1. [ ] Run full TypeScript check
 2. [ ] Run full build

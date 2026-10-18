@@ -25,13 +25,13 @@ This project is committed to providing a welcoming and inclusive experience for 
 
 ---
 
-## Getting Started
+## Getting started
 
 ### Prerequisites
 
-- **Node.js** >= 18.x
-- **pnpm** >= 8.x (corepack enabled recommended: `corepack enable && corepack prepare pnpm@latest --activate`)
-- **Git** >= 2.x
+- Node.js >= 18.x
+- pnpm >= 8.x (corepack enabled recommended: `corepack enable && corepack prepare pnpm@latest --activate`)
+- Git >= 2.x
 
 ### Repository Setup
 
@@ -52,7 +52,7 @@ pnpm dev
 
 ## Development Setup
 
-### Available Scripts
+### Available scripts
 
 | Command | Description |
 |---------|-------------|
@@ -67,13 +67,13 @@ pnpm dev
 
 Recommended VS Code extensions:
 
-- **oxlint** (for linting)
-- **Prettier** (code formatting)
-- **TypeScript + TSLint** (type checking)
+- oxlint (for linting)
+- Prettier (code formatting)
+- TypeScript + TSLint (type checking)
 
 ---
 
-## Project Architecture
+## Project architecture
 
 ```
 apps/
@@ -103,23 +103,23 @@ packages/
     pdf-engine/      # PDF loading library
 ```
 
-### Key Architecture Decisions
+### Key architecture decisions
 
-1. **Command Pattern**: All mutations go through `CommandPipeline` for undo/redo support
-2. **Zustand State Management**: Lightweight, selector-based state with shallow equality
-3. **Canvas Rendering**: PDF pages rendered to canvas via pdf.js
-4. **DOM Overlays**: Edit objects rendered as positioned HTML elements on top of canvas
+1. Command Pattern: All mutations go through `CommandPipeline` for undo/redo support
+2. Zustand State Management: Lightweight, selector-based state with shallow equality
+3. Canvas Rendering: PDF pages rendered to canvas via pdf.js
+4. DOM Overlays: Edit objects rendered as positioned HTML elements on top of canvas
 
 ---
 
-## Coding Standards
+## Coding standards
 
 ### TypeScript
 
-- **Strict mode**: Always enabled. No `as any` casts in production code.
-- **verbatimModuleSyntax**: Enabled. Use `import type` for type-only imports.
-- **erasableSyntaxOnly**: Enabled. No enums — use `const` objects with `as const`.
-- **Naming**: `camelCase` for variables/functions, `PascalCase` for types/classes, `SCREAMING_SNAKE_CASE` for constants.
+- Strict mode: Always enabled. No `as any` casts in production code.
+- verbatimModuleSyntax: Enabled. Use `import type` for type-only imports.
+- erasableSyntaxOnly: Enabled. No enums: use `const` objects with `as const`.
+- Naming: `camelCase` for variables/functions, `PascalCase` for types/classes, `SCREAMING_SNAKE_CASE` for constants.
 
 ### React
 
@@ -134,7 +134,7 @@ packages/
 - Design tokens defined in constants (not magic values)
 - Dark theme as default (no light theme toggle in V1)
 
-### Code Quality
+### Code quality
 
 - Zero `console.*` calls in production (guarded by `process.env.NODE_ENV`)
 - Zero TODO/FIXME/HACK comments
@@ -144,20 +144,20 @@ packages/
 
 ---
 
-## Pull Request Process
+## Pull request process
 
-1. **Create an issue** describing the change before starting work
-2. **Fork the repository** and create a feature branch
-3. **Write code** following the coding standards above
-4. **Add tests** for new functionality
-5. **Run validation**:
+1. Create an issue describing the change before starting work
+2. Fork the repository and create a feature branch
+3. Write code following the coding standards above
+4. Add tests for new functionality
+5. Run validation:
    ```bash
    pnpm typecheck  # Must pass with zero errors
    pnpm lint       # Must pass with zero warnings
    pnpm test       # All tests must pass
    ```
-6. **Update documentation** if public APIs change
-7. **Submit PR** with a clear description of changes
+6. Update documentation if public APIs change
+7. Submit PR with a clear description of changes
 
 ### PR Checklist
 
@@ -175,7 +175,7 @@ packages/
 
 ## Testing
 
-### Test Types
+### Test types
 
 | Type | Location | Runner |
 |------|----------|--------|
@@ -183,7 +183,7 @@ packages/
 | Integration | Manual (Electron environment) | N/A |
 | Type checking | N/A | `tsc --noEmit` |
 
-### Running Tests
+### Running tests
 
 ```bash
 # Run all tests

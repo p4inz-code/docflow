@@ -1,4 +1,4 @@
-# Docflow Menu System
+# Docflow menu system
 
 ## Architecture
 
@@ -98,24 +98,24 @@ Docflow uses a declarative menu system. Menu definitions are built by the `build
 | About Docflow | Open about dialog |
 | Keyboard Shortcuts | Show shortcuts list |
 
-## Implementation Details
+## Implementation details
 
-- Menu definitions are **rebuilt on every render** to capture latest state (dirty flags, enabled states, document list)
+- Menu definitions are rebuilt on every render to capture latest state (dirty flags, enabled states, document list)
 - Menus close on click outside
 - Hovering over a menu label while another menu is open switches to the hovered menu
 - Disabled items are shown with reduced opacity and no cursor interaction
 - Keyboard shortcuts are displayed alongside menu items
 - All actions are synchronous and route through the CommandPipeline, WorkspaceManager, or ClipboardManager
 
-## Props Interface
+## Props interface
 
 The MenuBar accepts callbacks for:
-- `onOpenFile` — trigger file picker
-- `onToggleCommandPalette` — open/close palette
-- `onSave` / `onSaveAs` — save operations
-- `onZoomIn` / `onZoomOut` — zoom control
-- `onFitWidth` / `onFitPage` — fit modes
-- `onToggleSidebar` / `onToggleInspector` — panel toggles
-- `onDocumentProperties` — open properties dialog
-- `onPreferences` — open settings
-- `onAbout` — open about dialog
+- `onOpenFile`: trigger file picker
+- `onToggleCommandPalette`: open/close palette
+- `onSave` / `onSaveAs`: save operations
+- `onZoomIn` / `onZoomOut`: zoom control
+- `onFitWidth` / `onFitPage`: fit modes
+- `onToggleSidebar` / `onToggleInspector`: panel toggles
+- `onDocumentProperties`: open properties dialog
+- `onPreferences`: open settings
+- `onAbout`: open about dialog

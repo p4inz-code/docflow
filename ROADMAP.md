@@ -1,18 +1,18 @@
-# Docflow Roadmap
+# Docflow roadmap
 
 > **Last updated:** July 2026
 
-## v1.0.0 — Release Candidate (Current)
+## v1.0.0: Release Candidate (Current)
 
 The current release focuses on:
-- ✅ Complete PDF viewing and annotation
-- ✅ Multi-document workspace
-- ✅ Professional editing tools
-- ✅ Undo/redo with command pipeline
-- ✅ Export to PDF, PNG, JPEG
-- ✅ Keyboard-first UX
+- Complete PDF viewing and annotation
+- Multi-document workspace
+- Professional editing tools
+- Undo/redo with command pipeline
+- Export to PDF, PNG, JPEG
+- Keyboard-first UX
 
-## v1.0.0 — Stable Release
+## v1.0.0: Stable Release
 
 ### Quality
 - [ ] Full ARIA accessibility on all components
@@ -28,7 +28,7 @@ The current release focuses on:
 - [ ] Improved empty states
 - [ ] Middle-mouse-button pan
 
-## v1.1.0 — Desktop Release
+## v1.1.0: Desktop Release
 
 - [ ] Electron shell integration
 - [ ] Native file system access
@@ -37,7 +37,7 @@ The current release focuses on:
 - [ ] Auto-updater
 - [ ] Windows/macOS/Linux installers
 
-## v1.2.0 — Collaboration & Advanced Features
+## v1.2.0: Collaboration & Advanced Features
 
 - [ ] PDF form filling
 - [ ] Digital signatures
@@ -46,7 +46,7 @@ The current release focuses on:
 - [ ] PDF comparison/diff
 - [ ] OCR support
 
-## v2.0.0 — Vision
+## v2.0.0: Vision
 
 - [ ] Real-time collaboration
 - [ ] Plugin system

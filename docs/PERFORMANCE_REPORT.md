@@ -1,13 +1,13 @@
-# Docflow V1 — Performance Report
+# Docflow V1: performance report
 
 > **Version:** 1.0.0-RC  
 > **Date:** July 2026  
 
 ---
 
-## 1. Rendering Performance
+## 1. Rendering performance
 
-### PDF Rendering
+### PDF rendering
 
 | PDF Size | Pages | Render Time (first) | Render Time (subsequent) | Memory |
 |----------|-------|---------------------|--------------------------|--------|
@@ -21,7 +21,7 @@
 - pdf.js worker processes pages in sequence for memory stability
 - VirtualPageRenderer limits active canvas elements to visible viewport + buffer
 
-### Overlay Rendering
+### Overlay rendering
 
 | Overlay Count | Render Time | Frame Time |
 |---------------|-------------|------------|
@@ -37,7 +37,7 @@
 
 ---
 
-## 2. Interaction Performance
+## 2. Interaction performance
 
 | Interaction | Latency | Frame Time |
 |-------------|---------|------------|
@@ -51,23 +51,23 @@
 
 ---
 
-## 3. Memory Analysis
+## 3. Memory analysis
 
-### Memory Leak Audit
+### Memory Leak audit
 
 | Resource | Cleanup Mechanism | Status |
 |----------|-------------------|--------|
-| PDF.js workers | `pdf.destroy()` in closeDocument | ✅ Clean |
-| Canvas elements | Removed in page unload/re-render | ✅ Clean |
-| Object URLs | `URL.revokeObjectURL()` after load | ✅ Clean |
-| Image bitmaps | `close()` on bitmap | ✅ Clean |
-| Event listeners | `removeEventListener` in useEffect cleanup | ✅ Clean |
-| RAF callbacks | Cancelled on unmount | ✅ Clean |
-| Intervals/Timeouts | `clearInterval`/`clearTimeout` | ✅ Clean |
-| AbortControllers | Aborted on unmount | ✅ Clean |
-| Zustand subscriptions | Automatic via selector equality | ✅ Clean |
-| MutationObservers | Disconnected on unmount | ✅ Clean |
-| IntersectionObservers | Disconnected in destroy() | ✅ Clean |
+| PDF.js workers | `pdf.destroy()` in closeDocument | Clean |
+| Canvas elements | Removed in page unload/re-render | Clean |
+| Object URLs | `URL.revokeObjectURL()` after load | Clean |
+| Image bitmaps | `close()` on bitmap | Clean |
+| Event listeners | `removeEventListener` in useEffect cleanup | Clean |
+| RAF callbacks | Cancelled on unmount | Clean |
+| Intervals/Timeouts | `clearInterval`/`clearTimeout` | Clean |
+| AbortControllers | Aborted on unmount | Clean |
+| Zustand subscriptions | Automatic via selector equality | Clean |
+| MutationObservers | Disconnected on unmount | Clean |
+| IntersectionObservers | Disconnected in destroy() | Clean |
 
 ### Memory Footprint (steady-state)
 
@@ -81,9 +81,9 @@
 
 ---
 
-## 4. React Render Analysis
+## 4. React render analysis
 
-### Component Re-render Frequency
+### Component Re-render frequency
 
 | Component | Renders on Open | Renders on Selection | Renders on Edit |
 |-----------|-----------------|----------------------|-----------------|
@@ -102,14 +102,14 @@
 
 ---
 
-## 5. Bundle Size
+## 5. Bundle size
 
 | Asset | Size (uncompressed) | Size (gzip) |
 |-------|---------------------|-------------|
 | Main JS bundle | ~850KB | ~280KB |
 | PDF.js worker | ~1.2MB | ~400KB |
 | CSS | ~15KB | ~4KB |
-| **Total** | **~2.1MB** | **~684KB** |
+| Total | ~2.1MB | ~684KB |
 
 **Code Splitting Opportunities (future):**
 - pdf.js worker → lazy loaded

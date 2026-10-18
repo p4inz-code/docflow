@@ -1,4 +1,4 @@
-# Docflow Document Lifecycle
+# Docflow document lifecycle
 
 ## States
 
@@ -44,16 +44,16 @@ A document transitions through these states:
     └────────────┘
 ```
 
-## Lifecycle Operations
+## Lifecycle operations
 
-### New Document
+### New document
 1. Generate unique tab ID
 2. Create document with `Untitled` name, null filePath
 3. Reset editor store
 4. Add to workspace store
 5. Save session
 
-### Open File
+### Open file
 1. Load PDF via pdfjs-dist
 2. Check for duplicate (same filePath → switch to existing tab)
 3. Create document with file info
@@ -68,7 +68,7 @@ A document transitions through these states:
 4. Update editor store dirty state
 5. Save session
 
-### Save As
+### Save as
 1. Trigger download/save dialog (browser) or native dialog (Electron)
 2. Save to new path
 3. Update filePath
@@ -84,7 +84,7 @@ A document transitions through these states:
 7. If no tabs remain: reset editor store
 8. Save session
 
-## Session Persistence
+## Session persistence
 
 Workspace state is persisted to localStorage under the key `docflow_workspace_session`. The session includes:
 - Open documents (filePath, name, activePage, zoomLevel)
@@ -93,10 +93,10 @@ Workspace state is persisted to localStorage under the key `docflow_workspace_se
 
 Restoration happens on application startup. Files from the session are re-opened if available.
 
-## Dirty State Synchronization
+## Dirty state synchronization
 
 Dirty state is maintained in both:
-- **WorkspaceStore** — per-document `isDirty` flag
-- **EditorStore** — global `isDirty` for the active document
+- WorkspaceStore: per-document `isDirty` flag
+- EditorStore: global `isDirty` for the active document
 
 When switching tabs, the editor store's dirty state is synced from the workspace store's document state.

@@ -1,8 +1,8 @@
-# Docflow — Renderer (Web App)
+# Docflow: renderer (web app)
 
 This is the web renderer for **Docflow**, a professional PDF editing workspace. It builds with Vite + React 19 and runs in any modern browser or as an Electron desktop app.
 
-## Quick Start
+## Quick start
 
 ```bash
 # From the repository root:
