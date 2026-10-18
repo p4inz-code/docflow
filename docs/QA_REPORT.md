@@ -110,7 +110,7 @@ Docflow V1 has undergone comprehensive quality assurance across all subsystems. 
 | Edge 125+ | Yes | Chromium-based |
 | Electron 30+ | Yes | Desktop app target |
 | Firefox | Yes | Full support |
-| Safari | | Minor CSS differences |
+| Safari | Partial | Minor CSS differences |
 
 ---
 

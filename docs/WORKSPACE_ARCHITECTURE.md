@@ -6,10 +6,10 @@ Docflow uses a multi-document workspace architecture inspired by modern code edi
 
 ## Core components
 
-### WorkspaceStore (zustand)
+### WorkspaceStore (Zustand)
 The central state container for all workspace documents. Manages:
 - Document array: ordered list of open documents
-- Active document: which tab is currently focused
+- Active document, which tab is currently focused
 - Recently closed: history of closed tabs (up to 20)
 - Tab operations: open, close, close others, close all, reorder, cycle
 

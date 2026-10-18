@@ -30,9 +30,9 @@
   <br />
 </div>
 
-Docflow is a **feature-complete PDF editing application** that runs entirely in the browser. It provides professional-grade document viewing, annotation, and editing capabilities with a clean, dark-themed interface.
+Docflow is a feature-complete PDF editor that runs entirely in the browser. You can view, annotate and edit documents with a clean, dark interface.
 
-**Why Docflow?** Most PDF editors are either heavy desktop applications or limited web tools. Docflow combines the accessibility of a web app with the power of a desktop editor. All running client-side with zero server dependencies.
+Why Docflow? Most PDF editors are either heavy desktop applications or limited web tools. Docflow aims to give you the convenience of a web app and the capability of a desktop editor, with everything running client-side and no server dependencies.
 
 ---
 
